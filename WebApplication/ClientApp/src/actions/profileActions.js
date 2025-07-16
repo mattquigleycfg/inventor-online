@@ -20,29 +20,61 @@ import repo from '../Repository';
 import { addError, addLog } from './notificationActions';
 import { showLoginFailed } from './uiFlagsActions';
 
-const actionTypes = {
-    PROFILE_LOADED: 'PROFILE_LOADED'
+export const UPDATE_PROFILE = 'UPDATE_PROFILE';
+
+export const updateProfile = (profile, isLoggedIn) => (dispatch) => {
+    dispatch({
+        type: UPDATE_PROFILE,
+        profile: profile,
+        isLoggedIn: isLoggedIn
+    });
 };
 
-export default actionTypes;
+/** Extract access token from URL query parameters */
+function extractTokenFromQuery(urlSearch) {
+    const params = new URLSearchParams(urlSearch);
+    return params.get('access_token');
+}
 
-/** Extract access token from URL hash */
-function extractToken(urlHash) {
+/** Extract access token from URL hash (legacy support) */
+function extractTokenFromHash(urlHash) {
     const regex = /access_token=([^&]*)/g;
     const m = regex.exec(urlHash);
     return m ? m[1] : undefined;
 }
 
+/** Extract error from URL query parameters */
+function extractErrorFromQuery(urlSearch) {
+    const params = new URLSearchParams(urlSearch);
+    return params.get('error');
+}
+
 export const detectToken = () => (dispatch) => {
     try {
+        // Check for error first
+        const error = extractErrorFromQuery(window.location.search);
+        if (error) {
+            dispatch(addError(`Authentication error: ${error}`));
+            repo.forgetAccessToken();
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            return;
+        }
 
-        const accessToken = extractToken(window.location.hash.substring(1));
+        // Try to extract token from query parameters (new authorization code flow)
+        let accessToken = extractTokenFromQuery(window.location.search);
+        
+        // Fallback to hash extraction (legacy implicit flow support)
+        if (!accessToken) {
+            accessToken = extractTokenFromHash(window.location.hash.substring(1));
+        }
+
         if (accessToken) {
             dispatch(addLog(`Detected access token`));
             repo.setAccessToken(accessToken);
 
-            // remove token from URL
-            window.history.pushState("", document.title, window.location.pathname);
+            // Clean up URL - remove both query params and hash
+            window.history.replaceState({}, document.title, window.location.pathname);
         } else {
             dispatch(addLog('Access token is not found'));
             repo.forgetAccessToken();
@@ -51,14 +83,6 @@ export const detectToken = () => (dispatch) => {
         dispatch(addError('Failed to detect token. (' + error + ')'));
         repo.forgetAccessToken();
     }
-};
-
-export const updateProfile = (profile, isLoggedIn) => {
-    return {
-        type: actionTypes.PROFILE_LOADED,
-        profile,
-        isLoggedIn
-    };
 };
 
 export const loadProfile = () => async (dispatch) => {

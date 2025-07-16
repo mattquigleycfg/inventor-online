@@ -16,17 +16,17 @@
 // UNINTERRUPTED OR ERROR FREE.
 /////////////////////////////////////////////////////////////////////
 
-import actions from '../actions/profileActions';
+import { UPDATE_PROFILE } from '../actions/profileActions';
 
-export const initialState = {
-    isLoggedIn: false,
-    name: "Anonymous",
-    avatarUrl: "logo-xs-white-BG.svg"
+const initialState = {
+    name: 'Anonymous',
+    avatarUrl: 'logo-xs-white-BG.svg',
+    isLoggedIn: false
 };
 
 export default function(state = initialState, action) {
     switch(action.type) {
-        case actions.PROFILE_LOADED: {
+        case UPDATE_PROFILE: {
             return { isLoggedIn: action.isLoggedIn, name: action.profile.name, avatarUrl: action.profile.avatarUrl};
         }
         default:

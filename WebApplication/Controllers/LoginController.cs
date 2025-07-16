@@ -17,6 +17,10 @@
 /////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
 using Autodesk.Forge.Core;
@@ -40,38 +44,106 @@ namespace WebApplication.Controllers
         private readonly ProfileProvider _profileProvider;
         private readonly InviteOnlyModeConfiguration _inviteOnlyModeConfig;
         private readonly CallbackUrlsConfiguration _callbackUrlsConfig;
+        private readonly IHttpClientFactory _httpClientFactory;
 
         /// <summary>
         /// Forge configuration.
         /// </summary>
         public ForgeConfiguration Configuration { get; }
 
-        public LoginController(ILogger<LoginController> logger, IOptions<ForgeConfiguration> optionsAccessor, ProfileProvider profileProvider, IOptions<InviteOnlyModeConfiguration> inviteOnlyModeOptionsAccessor, IOptions<CallbackUrlsConfiguration> callbackUrlsOptionsAccessor)
+        public LoginController(ILogger<LoginController> logger, IOptions<ForgeConfiguration> optionsAccessor, ProfileProvider profileProvider, IOptions<InviteOnlyModeConfiguration> inviteOnlyModeOptionsAccessor, IOptions<CallbackUrlsConfiguration> callbackUrlsOptionsAccessor, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
             _profileProvider = profileProvider;
-            Configuration = optionsAccessor.Value.Validate();
             _inviteOnlyModeConfig = inviteOnlyModeOptionsAccessor.Value;
             _callbackUrlsConfig = callbackUrlsOptionsAccessor.Value;
+            _httpClientFactory = httpClientFactory;
+            Configuration = optionsAccessor.Value;
         }
 
         [HttpGet]
-        public RedirectResult Get()
+        public IActionResult Index()
         {
             _logger.LogInformation("Authorize against the Oxygen");
 
             // Determine the appropriate callback URL based on environment
-            var callbackUrl = GetCallbackUrl();
+            var callbackUrl = GetCallbackUrl() + "login/callback";
             var encodedHost = HttpUtility.UrlEncode(callbackUrl);
 
             // prepare scope
             var scopes = new[] { "user-profile:read" };
-            var fullScope = string.Join("%20", scopes); // it's not necessary now, but kept in case we need it in future
+            var fullScope = string.Join("%20", scopes);
 
             // build auth url (https://aps.autodesk.com/en/docs/oauth/v2/reference/http/authorize-GET)
             string baseUrl = Configuration.AuthenticationAddress.GetLeftPart(System.UriPartial.Authority);
-            var authUrl = $"{baseUrl}/authentication/v2/authorize?response_type=token&client_id={Configuration.ClientId}&redirect_uri={encodedHost}&scope={fullScope}";
+            var authUrl = $"{baseUrl}/authentication/v2/authorize?response_type=code&client_id={Configuration.ClientId}&redirect_uri={encodedHost}&scope={fullScope}";
             return Redirect(authUrl);
+        }
+
+        [HttpGet("callback")]
+        public async Task<IActionResult> Callback(string code, string state, string error)
+        {
+            if (!string.IsNullOrEmpty(error))
+            {
+                _logger.LogError($"OAuth error: {error}");
+                return Redirect($"/?error={HttpUtility.UrlEncode(error)}");
+            }
+
+            if (string.IsNullOrEmpty(code))
+            {
+                _logger.LogError("No authorization code received");
+                return Redirect("/?error=no_code");
+            }
+
+            try
+            {
+                // Exchange authorization code for access token
+                var accessToken = await ExchangeCodeForTokenAsync(code);
+                
+                // Redirect to frontend with token
+                return Redirect($"/?access_token={accessToken}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exchanging authorization code for token");
+                return Redirect($"/?error={HttpUtility.UrlEncode("token_exchange_failed")}");
+            }
+        }
+
+        private async Task<string> ExchangeCodeForTokenAsync(string code)
+        {
+            var httpClient = _httpClientFactory.CreateClient();
+            
+            var callbackUrl = GetCallbackUrl() + "login/callback";
+            
+            // Prepare Basic Auth header
+            var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{Configuration.ClientId}:{Configuration.ClientSecret}"));
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"Basic {credentials}");
+            
+            // Prepare form data
+            var formData = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("grant_type", "authorization_code"),
+                new KeyValuePair<string, string>("code", code),
+                new KeyValuePair<string, string>("redirect_uri", callbackUrl)
+            };
+            
+            var formContent = new FormUrlEncodedContent(formData);
+            
+            string baseUrl = Configuration.AuthenticationAddress.GetLeftPart(System.UriPartial.Authority);
+            var response = await httpClient.PostAsync($"{baseUrl}/authentication/v2/token", formContent);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError($"Token exchange failed: {response.StatusCode} - {errorContent}");
+                throw new Exception($"Token exchange failed: {response.StatusCode}");
+            }
+            
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var tokenResponse = JsonSerializer.Deserialize<JsonElement>(responseContent);
+            
+            return tokenResponse.GetProperty("access_token").GetString();
         }
 
         private string GetCallbackUrl()
@@ -101,7 +173,7 @@ namespace WebApplication.Controllers
             
             // Default to production or fallback to current request URL
             return _callbackUrlsConfig.Production ?? 
-                   $"{(currentScheme == "http" ? "https" : currentScheme)}{Uri.SchemeDelimiter}{HttpContext.Request.Host}";
+                   $"{(currentScheme == "http" ? "https" : currentScheme)}{Uri.SchemeDelimiter}{HttpContext.Request.Host}/";
         }
 
         [HttpGet("profile")]

@@ -16,7 +16,7 @@
 // UNINTERRUPTED OR ERROR FREE.
 /////////////////////////////////////////////////////////////////////
 
-import actionTypes, { detectToken, loadProfile } from "./profileActions";
+import { detectToken, loadProfile } from './profileActions';
 import notificationTypes from '../actions/notificationActions';
 
 // prepare mock for Repository module
@@ -37,41 +37,75 @@ describe('detectToken', () => {
         store = mockStore({});
         repoInstance.setAccessToken.mockClear();
         repoInstance.forgetAccessToken.mockClear();
+        delete window.location;
     });
 
     describe('success', () => {
 
         it.each([
-            "#access_token=foo",
-            "#first=second&access_token=foo",
-        ])("should remember access token if it's in the url (%s)",
-        (hashString) => {
+            "?access_token=foo",
+            "?first=second&access_token=foo",
+        ])("should remember access token if it's in the query string (%s)",
+        (queryString) => {
 
-            window.location.hash = hashString;
-            const pushStateSpy = jest.spyOn(window.history, 'pushState');
+            window.location = { search: queryString, hash: '', pathname: '/test' };
+            const replaceStateSpy = jest.spyOn(window.history, 'replaceState');
 
             detectToken()(store.dispatch);
 
             expect(repoInstance.setAccessToken).toHaveBeenCalledWith('foo');
-            expect(pushStateSpy).toHaveBeenCalled();
+            expect(replaceStateSpy).toHaveBeenCalled();
 
-            pushStateSpy.mockRestore();
+            replaceStateSpy.mockRestore();
         });
 
         it.each([
-            "",                     // no hash
-            "#",                    // hash, but nothing in it
-            "#foo=1",               // different parameter
-            "#access_tokennnn=1",   // slightly different name
-            "#access_token=",       // expected parameter, but without value
-        ])('should forget token if not found in url (%s)',
+            "#access_token=foo",
+            "#first=second&access_token=foo",
+        ])("should remember access token if it's in the url hash (legacy support) (%s)",
         (hashString) => {
 
-            window.location.hash = hashString;
+            window.location = { search: '', hash: hashString, pathname: '/test' };
+            const replaceStateSpy = jest.spyOn(window.history, 'replaceState');
+
+            detectToken()(store.dispatch);
+
+            expect(repoInstance.setAccessToken).toHaveBeenCalledWith('foo');
+            expect(replaceStateSpy).toHaveBeenCalled();
+
+            replaceStateSpy.mockRestore();
+        });
+
+        it.each([
+            "",                     // no search params
+            "?",                    // query string, but nothing in it
+            "?foo=1",               // different parameter
+            "?access_tokennnn=1",   // slightly different name
+            "?access_token=",       // expected parameter, but without value
+        ])('should forget token if not found in url (%s)',
+        (queryString) => {
+
+            window.location = { search: queryString, hash: '', pathname: '/test' };
 
             detectToken()(store.dispatch);
 
             expect(repoInstance.forgetAccessToken).toHaveBeenCalled();
+        });
+
+        it('should handle errors from OAuth callback', () => {
+            window.location = { search: '?error=access_denied', hash: '', pathname: '/test' };
+            const replaceStateSpy = jest.spyOn(window.history, 'replaceState');
+
+            detectToken()(store.dispatch);
+
+            expect(repoInstance.forgetAccessToken).toHaveBeenCalled();
+            
+            const errorAction = store.getActions().find(a => a.type === notificationTypes.ADD_ERROR);
+            expect(errorAction).toBeDefined();
+            expect(errorAction.info).toContain('access_denied');
+            expect(replaceStateSpy).toHaveBeenCalled();
+
+            replaceStateSpy.mockRestore();
         });
     });
 
@@ -79,7 +113,7 @@ describe('detectToken', () => {
         it('should log error on failure and forget access token', () => {
 
             // prepare to raise error during token extraction
-            window.location.hash = '#access_token=foo';
+            window.location = { search: '?access_token=foo', hash: '', pathname: '/test' };
             repoInstance.setAccessToken.mockImplementation(() => { throw new Error('123456'); });
 
             // execute
@@ -102,36 +136,49 @@ describe('loadProfile', () => {
     beforeEach(() => {
         store = mockStore({});
         repoInstance.loadProfile.mockClear();
+        repoInstance.hasAccessToken.mockClear();
     });
 
     describe('success', () => {
 
-        it('should fetch profile from repository', async () => {
+        it('should load profile and set logged in state', async () => {
 
-            const profile = { name: "John Smith", avatarUrl: "http://johnsmith.com/avatar.jpg"};
+            // prepare
+            const profileMock = { name: 'John', avatarUrl: 'avatar.jpg' };
+            repoInstance.loadProfile.mockResolvedValue(profileMock);
+            repoInstance.hasAccessToken.mockReturnValue(true);
 
-            repoInstance.loadProfile.mockImplementation(() => profile);
+            // execute
+            await loadProfile()(store.dispatch);
 
-            await store.dispatch(loadProfile());
-            expect(repoInstance.loadProfile).toHaveBeenCalledTimes(1);
+            // verify
+            expect(repoInstance.loadProfile).toHaveBeenCalled();
+            expect(repoInstance.hasAccessToken).toHaveBeenCalled();
 
-            // check the loaded profile is in store now
-            const profileLoadedAction = store.getActions().find(a => a.type === actionTypes.PROFILE_LOADED);
-            expect(profileLoadedAction.profile).toEqual(profile);
+            const actions = store.getActions();
+            const updateProfileAction = actions.find(a => a.type === 'UPDATE_PROFILE');
+            expect(updateProfileAction).toBeDefined();
+            expect(updateProfileAction.profile).toEqual(profileMock);
+            expect(updateProfileAction.isLoggedIn).toBe(true);
         });
     });
 
     describe('failure', () => {
-        it('should log error on failure and forget access token', async () => {
+        it('should log error on failure', async () => {
 
-            repoInstance.loadProfile.mockImplementation(() => { throw new Error(); });
+            // prepare
+            const errorMock = new Error('Network error');
+            repoInstance.loadProfile.mockRejectedValue(errorMock);
 
-            await store.dispatch(loadProfile());
-            expect(repoInstance.loadProfile).toHaveBeenCalledTimes(1);
+            // execute
+            await loadProfile()(store.dispatch);
 
-            // check the error is logged
-            const logAction = store.getActions().find(a => a.type === notificationTypes.ADD_ERROR);
-            expect(logAction).toBeDefined();
+            // verify
+            expect(repoInstance.loadProfile).toHaveBeenCalled();
+
+            const actions = store.getActions();
+            const errorAction = actions.find(a => a.type === notificationTypes.ADD_ERROR);
+            expect(errorAction).toBeDefined();
         });
     });
 });
