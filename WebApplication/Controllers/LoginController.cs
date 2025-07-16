@@ -39,18 +39,20 @@ namespace WebApplication.Controllers
         private readonly ILogger<LoginController> _logger;
         private readonly ProfileProvider _profileProvider;
         private readonly InviteOnlyModeConfiguration _inviteOnlyModeConfig;
+        private readonly CallbackUrlsConfiguration _callbackUrlsConfig;
 
         /// <summary>
         /// Forge configuration.
         /// </summary>
         public ForgeConfiguration Configuration { get; }
 
-        public LoginController(ILogger<LoginController> logger, IOptions<ForgeConfiguration> optionsAccessor, ProfileProvider profileProvider, IOptions<InviteOnlyModeConfiguration> inviteOnlyModeOptionsAccessor)
+        public LoginController(ILogger<LoginController> logger, IOptions<ForgeConfiguration> optionsAccessor, ProfileProvider profileProvider, IOptions<InviteOnlyModeConfiguration> inviteOnlyModeOptionsAccessor, IOptions<CallbackUrlsConfiguration> callbackUrlsOptionsAccessor)
         {
             _logger = logger;
             _profileProvider = profileProvider;
             Configuration = optionsAccessor.Value.Validate();
             _inviteOnlyModeConfig = inviteOnlyModeOptionsAccessor.Value;
+            _callbackUrlsConfig = callbackUrlsOptionsAccessor.Value;
         }
 
         [HttpGet]
@@ -58,16 +60,8 @@ namespace WebApplication.Controllers
         {
             _logger.LogInformation("Authorize against the Oxygen");
 
-            // prepare redirect URL for Oxygen
-            // NOTE: This MUST match the pattern of the callback URL field of the app's registration
-            // TODO: workaround which may be removed once application will start to use https
-            var scheme = HttpContext.Request.Scheme;
-            if (HttpContext.Request.Host.Host == "inventor-config-demo.autodesk.io" ||
-                HttpContext.Request.Host.Host == "inventor-config-demo-dev.autodesk.io" )
-            {
-                scheme = "https";
-            }
-            var callbackUrl = $"{scheme}{Uri.SchemeDelimiter}{HttpContext.Request.Host}";
+            // Determine the appropriate callback URL based on environment
+            var callbackUrl = GetCallbackUrl();
             var encodedHost = HttpUtility.UrlEncode(callbackUrl);
 
             // prepare scope
@@ -78,6 +72,36 @@ namespace WebApplication.Controllers
             string baseUrl = Configuration.AuthenticationAddress.GetLeftPart(System.UriPartial.Authority);
             var authUrl = $"{baseUrl}/authentication/v1/authorize?response_type=token&client_id={Configuration.ClientId}&redirect_uri={encodedHost}&scope={fullScope}";
             return Redirect(authUrl);
+        }
+
+        private string GetCallbackUrl()
+        {
+            var currentHost = HttpContext.Request.Host.Host;
+            var currentScheme = HttpContext.Request.Scheme;
+            
+            // Check if we're in local development
+            if (currentHost == "localhost" || currentHost == "127.0.0.1")
+            {
+                return _callbackUrlsConfig.Development;
+            }
+            
+            // Check if we're on Azure App Service
+            if (currentHost.Contains("azurewebsites.net") || 
+                currentHost == "3d.con-formgroup.com.au")
+            {
+                return _callbackUrlsConfig.Production;
+            }
+            
+            // Check legacy hosts
+            if (currentHost == "inventor-config-demo.autodesk.io" || 
+                currentHost == "inventor-config-demo-dev.autodesk.io")
+            {
+                return $"https://{currentHost}/";
+            }
+            
+            // Default to production or fallback to current request URL
+            return _callbackUrlsConfig.Production ?? 
+                   $"{(currentScheme == "http" ? "https" : currentScheme)}{Uri.SchemeDelimiter}{HttpContext.Request.Host}";
         }
 
         [HttpGet("profile")]

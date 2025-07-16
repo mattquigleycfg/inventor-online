@@ -39,6 +39,7 @@ namespace WebApplication
         private const string InviteOnlyModeKey = "InviteOnlyMode";
         private const string ProcessingOptionsKey = "Processing";
         private const string PublisherOptionsKey = "Publisher";
+        private const string CallbackUrlsKey = "CallbackUrls";
 
         public static void ConfigureServices(IConfiguration Configuration, IServiceCollection services)
         {
@@ -47,7 +48,7 @@ namespace WebApplication
                 .AddJsonOptions(options =>
                                 {
                                     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-                                    options.JsonSerializerOptions.IgnoreNullValues = true;
+                                    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
                                 });
 
             services.AddSignalR(o =>
@@ -77,7 +78,8 @@ namespace WebApplication
                 .Configure<DefaultProjectsConfiguration>(Configuration.GetSection(DefaultProjectsSectionKey))
                 .Configure<InviteOnlyModeConfiguration>(Configuration.GetSection(InviteOnlyModeKey))
                 .Configure<ProcessingOptions>(Configuration.GetSection(ProcessingOptionsKey))
-                .Configure<PublisherConfiguration>(Configuration.GetSection(PublisherOptionsKey));
+                .Configure<PublisherConfiguration>(Configuration.GetSection(PublisherOptionsKey))
+                .Configure<CallbackUrlsConfiguration>(Configuration.GetSection(CallbackUrlsKey));
 
             services.AddSingleton<IResourceProvider, ResourceProvider>();
             services.AddSingleton<IPostProcessing, PostProcessing>();

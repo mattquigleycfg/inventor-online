@@ -54,6 +54,17 @@ namespace WebApplication.Definitions
         public string[] Addresses { get; set; }
     }
 
+    public class CallbackUrlsConfiguration
+    {
+        public string Production { get; set; } = "https://inventor3d.netlify.app/";
+        public string Development { get; set; } = "https://localhost:5001/";
+        public string[] Allowed { get; set; } = new string[] { 
+            "https://inventor3d.netlify.app/", 
+            "https://localhost:5001/", 
+            "http://localhost:3000/" 
+        };
+    }
+
     /// <summary>
     /// Save work item processing reports.
     /// </summary>
