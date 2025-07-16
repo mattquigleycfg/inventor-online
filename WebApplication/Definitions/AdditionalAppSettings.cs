@@ -56,10 +56,10 @@ namespace WebApplication.Definitions
 
     public class CallbackUrlsConfiguration
     {
-        public string Production { get; set; } = "https://inventor3d.netlify.app/";
+        public string Production { get; set; } = "https://conform3d.azurewebsites.net/";
         public string Development { get; set; } = "https://localhost:5001/";
         public string[] Allowed { get; set; } = new string[] { 
-            "https://inventor3d.netlify.app/", 
+            "https://conform3d.azurewebsites.net/", 
             "https://localhost:5001/", 
             "http://localhost:3000/" 
         };

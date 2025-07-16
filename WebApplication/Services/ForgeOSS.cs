@@ -368,7 +368,7 @@ namespace WebApplication.Services
             var formData = new List<KeyValuePair<string, string>>
             {
                 new KeyValuePair<string, string>("grant_type", "client_credentials"),
-                new KeyValuePair<string, string>("scope", string.Join(" ", _scope.Select(s => s.ToString())))
+                new KeyValuePair<string, string>("scope", "data:read data:write bucket:create bucket:delete bucket:read")
             };
             
             var content = new FormUrlEncodedContent(formData);
