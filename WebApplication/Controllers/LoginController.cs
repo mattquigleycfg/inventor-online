@@ -68,9 +68,9 @@ namespace WebApplication.Controllers
             var scopes = new[] { "user-profile:read" };
             var fullScope = string.Join("%20", scopes); // it's not necessary now, but kept in case we need it in future
 
-            // build auth url (https://forge.autodesk.com/en/docs/oauth/v2/reference/http/authorize-GET)
+            // build auth url (https://aps.autodesk.com/en/docs/oauth/v2/reference/http/authorize-GET)
             string baseUrl = Configuration.AuthenticationAddress.GetLeftPart(System.UriPartial.Authority);
-            var authUrl = $"{baseUrl}/authentication/v1/authorize?response_type=token&client_id={Configuration.ClientId}&redirect_uri={encodedHost}&scope={fullScope}";
+            var authUrl = $"{baseUrl}/authentication/v2/authorize?response_type=token&client_id={Configuration.ClientId}&redirect_uri={encodedHost}&scope={fullScope}";
             return Redirect(authUrl);
         }
 

@@ -19,8 +19,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Autodesk.Forge;
 using Autodesk.Forge.Client;
@@ -349,20 +351,62 @@ namespace WebApplication.Services
 
         private async Task<string> _2leggedAsync()
         {
-            _logger.LogInformation("Refreshing Forge token");
+            _logger.LogInformation("Refreshing Forge token using v2 endpoint");
 
-            // Call the asynchronous version of the 2-legged client with HTTP information
-            // HTTP information helps to verify if the call was successful as well as read the HTTP transaction headers.
-            var twoLeggedApi = new TwoLeggedApi();
-            Autodesk.Forge.Client.ApiResponse<dynamic> response = await twoLeggedApi.AuthenticateAsyncWithHttpInfo(Configuration.ClientId, Configuration.ClientSecret, oAuthConstants.CLIENT_CREDENTIALS, _scope);
-            if (response.StatusCode != StatusCodes.Status200OK)
+            using var httpClient = _clientFactory.CreateClient();
+            
+            // Encode client credentials for Basic authentication (v2 requirement)
+            var credentials = Convert.ToBase64String(
+                Encoding.UTF8.GetBytes($"{Configuration.ClientId}:{Configuration.ClientSecret}")
+            );
+            
+            // Set up headers for v2 endpoint
+            httpClient.DefaultRequestHeaders.Authorization = 
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", credentials);
+            
+            // Prepare form data (client credentials NOT in body for v2)
+            var formData = new List<KeyValuePair<string, string>>
             {
-                throw new Exception("Request failed! (with HTTP response " + response.StatusCode + ")");
+                new KeyValuePair<string, string>("grant_type", "client_credentials"),
+                new KeyValuePair<string, string>("scope", string.Join(" ", _scope.Select(s => s.ToString())))
+            };
+            
+            var content = new FormUrlEncodedContent(formData);
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/x-www-form-urlencoded");
+            
+            // Call v2 token endpoint
+            string tokenEndpoint = $"{Configuration.AuthenticationAddress.GetLeftPart(System.UriPartial.Authority)}/authentication/v2/token";
+            
+            try
+            {
+                var response = await httpClient.PostAsync(tokenEndpoint, content);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError($"Failed to get v2 token. Status: {response.StatusCode}, Content: {errorContent}");
+                    throw new Exception($"Request failed with HTTP response {response.StatusCode}");
+                }
+                
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var tokenResponse = JsonSerializer.Deserialize<JsonElement>(responseContent);
+                
+                if (!tokenResponse.TryGetProperty("access_token", out var accessTokenElement))
+                {
+                    _logger.LogError($"No access_token in response: {responseContent}");
+                    throw new Exception("No access_token in response");
+                }
+                
+                string accessToken = accessTokenElement.GetString();
+                _logger.LogInformation("Successfully obtained v2 access token");
+                
+                return accessToken;
             }
-
-            // The JSON response from the oAuth server is the Data variable and has already been parsed into a DynamicDictionary object.
-            dynamic bearer = response.Data;
-            return bearer.access_token;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error obtaining v2 access token");
+                throw;
+            }
         }
 
         /// <summary>
