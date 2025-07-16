@@ -221,4 +221,5 @@ We are using npm.
 You can read about embedded mode [here](EMBEDDED-README.md)
 	
 #   i n v e n t o r  
+ #   i n v e n t o r  
  
