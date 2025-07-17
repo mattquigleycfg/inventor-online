@@ -86,6 +86,24 @@ namespace WebApplication.Processing
                 Arguments = workItemArgs
             };
 
+            // ADD START: Ensure Azure Blob uploads include correct headers
+            foreach (var arg in wi.Arguments.Values)
+            {
+                if (arg is XrefTreeArgument xrefArg && xrefArg.Verb == Verb.Put &&
+                    !string.IsNullOrEmpty(xrefArg.Url) &&
+                    xrefArg.Url.Contains(".blob.core.windows.net", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Initialize headers dictionary if null
+                    xrefArg.Headers ??= new Dictionary<string, string>();
+                    // Azure requires the blob type header when uploading via SAS URL
+                    if (!xrefArg.Headers.ContainsKey("x-ms-blob-type"))
+                    {
+                        xrefArg.Headers["x-ms-blob-type"] = "BlockBlob";
+                    }
+                }
+            }
+            // ADD END
+
             // run WI and wait for completion
             var sw = Stopwatch.StartNew();
             WorkItemStatus status = await LaunchAndWait(wi);
