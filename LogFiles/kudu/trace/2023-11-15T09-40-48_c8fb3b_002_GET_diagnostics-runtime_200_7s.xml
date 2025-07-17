@@ -1,0 +1,4 @@
+<step title="Incoming Request" date="2023-11-15T09:40:48.660" instance="c8fb3b" url="/diagnostics/runtime" method="GET" type="request" pid="86,1,25" Host="conform3d.scm.azurewebsites.net" User-Agent="Visual-Studio/17.5.3+33516.290 WebToolsExtension/17.5.318.41597" Accept-Encoding="gzip, deflate" Authorization="Bas..." X-ARR-LOG-ID="a49b37ed-310c-48b5-9b8a-f802a9d38d4b" CLIENT-IP="206.83.113.121:59441" X-Client-IP="206.83.113.121" X-SITE-DEPLOYMENT-ID="conform3d" WAS-DEFAULT-HOSTNAME="conform3d.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/diagnostics/runtime" X-Client-Port="59441" >
+  <step title="RuntimeController.GetRuntimeVersions" date="2023-11-15T09:40:55.534" /><!-- duration: 52ms -->
+  <step title="Outgoing response" date="2023-11-15T09:40:56.092" type="response" statusCode="200" statusText="OK" /><!-- duration: 3ms -->
+</step><!-- duration: 7437ms -->

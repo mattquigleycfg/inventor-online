@@ -62,6 +62,8 @@ namespace WebApplication.Services
         /// </summary>
         public ForgeConfiguration Configuration { get; }
 
+        private string OssV2Base => $"{Configuration.AuthenticationAddress.GetLeftPart(UriPartial.Authority)}/oss/v2";
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -295,7 +297,8 @@ namespace WebApplication.Services
         {
             await _ossResiliencyPolicy.ExecuteAsync(async () =>
                     {
-                        var api = new BucketsApi { Configuration = { AccessToken = await TwoLeggedAccessToken } };
+                        var api = new BucketsApi(OssV2Base);
+                        api.Configuration.AccessToken = await TwoLeggedAccessToken;
                         await action(api);
                     });
         }
@@ -308,7 +311,8 @@ namespace WebApplication.Services
         {
             return await _ossResiliencyPolicy.ExecuteAsync(async () =>
             {
-                var api = new BucketsApi { Configuration = { AccessToken = await TwoLeggedAccessToken } };
+                var api = new BucketsApi(OssV2Base);
+                api.Configuration.AccessToken = await TwoLeggedAccessToken;
                 return await action(api);
             });
         }
@@ -321,7 +325,8 @@ namespace WebApplication.Services
         {
             await _ossResiliencyPolicy.ExecuteAsync(async () =>
                     {
-                        var api = new ObjectsApi { Configuration = { AccessToken = await TwoLeggedAccessToken } };
+                        var api = new ObjectsApi(OssV2Base);
+                        api.Configuration.AccessToken = await TwoLeggedAccessToken;
                         await action(api);
                     });
         }
@@ -334,7 +339,8 @@ namespace WebApplication.Services
         {
             return await _ossResiliencyPolicy.ExecuteAsync(async () =>
             {
-                var api = new ObjectsApi { Configuration = { AccessToken = await TwoLeggedAccessToken } };
+                var api = new ObjectsApi(OssV2Base);
+                api.Configuration.AccessToken = await TwoLeggedAccessToken;
                 return await action(api);
             });
         }

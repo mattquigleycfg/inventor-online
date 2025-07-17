@@ -1,0 +1,3 @@
+<step title="Startup Request" date="2025-07-17T02:48:03.338" instance="47b374" url="/api/zipdeploy?isAsync=true" method="POST" type="request" pid="823,1,45" ScmType="GitHubAction" >
+  <step title="Cleanup Xml Logs" date="2025-07-17T02:48:03.346" /><!-- duration: 11ms -->
+</step><!-- duration: 23ms -->

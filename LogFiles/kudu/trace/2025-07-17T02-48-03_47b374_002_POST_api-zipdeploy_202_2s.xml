@@ -1,0 +1,17 @@
+<step title="Incoming Request" date="2025-07-17T02:48:03.418" instance="47b374" url="/api/zipdeploy?isAsync=true" method="POST" type="request" pid="823,1,45" Host="conform3d.scm.azurewebsites.net" User-Agent="websdk/WebSdk_VisualStudio_17.0" Authorization="Bea..." Content-Type="application/zip; charset=utf-8" Expect="100-continue" Content-Length="2793456" X-ARR-LOG-ID="5a4ce31a-3ac0-42e0-a2f5-61faa7938161" CLIENT-IP="203.87.19.234:60964" X-SITE-DEPLOYMENT-ID="conform3d" WAS-DEFAULT-HOSTNAME="conform3d.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/zipdeploy?isAsync=true" X-Client-IP="203.87.19.234" X-Client-Port="60964" Content-Encoding="utf-8" >
+  <step title="ZipPushDeploy" date="2025-07-17T02:48:04.479" >
+    <step title="ZipDeploy. Extract zip." date="2025-07-17T02:48:04.494" /><!-- duration: 6ms -->
+    <step title="None repository commit" date="2025-07-17T02:48:04.512" >
+      <step title="Commit id: 6b5c1da0-8342-4937-8290-c4c65d70c5a5" date="2025-07-17T02:48:04.518" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 4ms -->
+    </step><!-- duration: 15ms -->
+    <step title="Starting PushDeployAsync" date="2025-07-17T02:48:04.531" /><!-- duration: 4ms -->
+    <step title="Writing artifact to /tmp/zipdeploy/51b14f56-3674-47f3-8bed-eda88cdaad51.zip" date="2025-07-17T02:48:04.781" >
+      <step title="Writing multipart request body to /tmp/zipdeploy/51b14f56-3674-47f3-8bed-eda88cdaad51.zip" date="2025-07-17T02:48:04.809" /><!-- duration: 4ms -->
+    </step><!-- duration: 290ms -->
+    <step title="Start deployment in the background" date="2025-07-17T02:48:05.095" >
+      <step title="Acquiring Deployment Lock" date="2025-07-17T02:48:05.145" /><!-- duration: 36ms -->
+      <step title="Acquired Deployment Lock" date="2025-07-17T02:48:05.238" /><!-- duration: 6ms -->
+    </step><!-- duration: 272ms -->
+  </step><!-- duration: 899ms -->
+  <step title="Outgoing response" date="2025-07-17T02:48:05.424" type="response" statusCode="202" statusText="Accepted" /><!-- duration: 9ms -->
+</step><!-- duration: 2034ms -->

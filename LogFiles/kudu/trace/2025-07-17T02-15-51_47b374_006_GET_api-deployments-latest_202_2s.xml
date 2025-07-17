@@ -1,0 +1,9 @@
+<step title="Incoming Request" date="2025-07-17T02:15:51.176" instance="47b374" url="/api/deployments/latest?deployer=Push-Deployer&amp;time=2025-07-17_02-15-46Z" method="GET" type="request" pid="822,1,33" Host="conform3d.scm.azurewebsites.net" User-Agent="websdk/WebSdk_VisualStudio_17.0 websdk/WebSdk_VisualStudio_17.0 websdk/WebSdk_VisualStudio_17.0" Authorization="Bea..." Cookie="ARRAffinity=47b374565f68b6c7babe8d5c4b02a2998210bea113f64008c52a0ee5488036ef; ARRAffinitySameSite=47b374565f68b6c7babe8d5c4b02a2998210bea113f64008c52a0ee5488036ef" X-ARR-LOG-ID="5ba27ea6-1b46-4744-bffc-558d6b40e7ee" CLIENT-IP="203.87.19.234:57432" X-SITE-DEPLOYMENT-ID="conform3d" WAS-DEFAULT-HOSTNAME="conform3d.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/deployments/latest?deployer=Push-Deployer&amp;time=2025-07-17_02-15-46Z" X-Client-IP="203.87.19.234" X-Client-Port="57432" >
+  <step title="Cleanup Xml Logs" date="2025-07-17T02:15:51.217" /><!-- duration: 98ms -->
+  <step title="DeploymentService.GetResult" date="2025-07-17T02:15:51.357" >
+    <step title="DeploymentService.GetLatestDeployment" date="2025-07-17T02:15:51.376" >
+      <step title="DeploymentManager.GetResults" date="2025-07-17T02:15:51.387" /><!-- duration: 1481ms -->
+    </step><!-- duration: 1512ms -->
+  </step><!-- duration: 1543ms -->
+  <step title="Outgoing response" date="2025-07-17T02:15:52.940" type="response" statusCode="202" statusText="Accepted" /><!-- duration: 10ms -->
+</step><!-- duration: 1802ms -->

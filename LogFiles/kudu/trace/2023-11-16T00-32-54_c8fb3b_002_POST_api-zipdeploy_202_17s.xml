@@ -1,0 +1,14 @@
+<step title="Incoming Request" date="2023-11-16T00:32:54.705" instance="c8fb3b" url="/api/zipdeploy?isAsync=true" method="POST" type="request" pid="87,1,24" Host="conform3d.scm.azurewebsites.net" User-Agent="websdk/WebSdk_VisualStudio_17.0" Authorization="Bas..." Content-Type="application/zip; charset=utf-8" Expect="100-continue" Content-Length="3048472" X-ARR-LOG-ID="1d5d90a1-0e98-40f0-910a-27e5e5048fed" CLIENT-IP="206.83.113.121:15953" X-Client-IP="206.83.113.121" X-SITE-DEPLOYMENT-ID="conform3d" WAS-DEFAULT-HOSTNAME="conform3d.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/zipdeploy?isAsync=true" X-Client-Port="15953" Content-Encoding="utf-8" >
+  <step title="ZipPushDeploy" date="2023-11-16T00:32:55.929" >
+    <step title="ZipDeploy. Extract zip." date="2023-11-16T00:32:55.953" /><!-- duration: 2ms -->
+    <step title="None repository commit" date="2023-11-16T00:32:56.089" >
+      <step title="Commit id: 4842194a-49f1-4ea2-9b4a-93f1822c8ae1" date="2023-11-16T00:32:56.091" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 3ms -->
+    </step><!-- duration: 8ms -->
+    <step title="Writing artifact to /tmp/zipdeploy/b4e496e8-a5b8-41ea-bbdd-36a92da6a269.zip" date="2023-11-16T00:32:56.818" /><!-- duration: 14202ms -->
+    <step title="Start deployment in the background" date="2023-11-16T00:33:11.051" >
+      <step title="Acquiring Deployment Lock" date="2023-11-16T00:33:11.072" /><!-- duration: 10ms -->
+      <step title="Acquired Deployment Lock" date="2023-11-16T00:33:11.180" /><!-- duration: 3ms -->
+    </step><!-- duration: 537ms -->
+  </step><!-- duration: 15677ms -->
+  <step title="Outgoing response" date="2023-11-16T00:33:11.637" type="response" statusCode="202" statusText="Accepted" /><!-- duration: 4ms -->
+</step><!-- duration: 16939ms -->

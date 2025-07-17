@@ -1,0 +1,18 @@
+<step title="Incoming Request" date="2025-07-17T03:18:19.342" instance="47b374" url="/api/zipdeploy?isAsync=true" method="POST" type="request" pid="827,1,17" Host="conform3d.scm.azurewebsites.net" User-Agent="websdk/WebSdk_VisualStudio_17.0" Authorization="Bea..." Content-Type="application/zip; charset=utf-8" Expect="100-continue" Content-Length="2793452" X-ARR-LOG-ID="2ae6b029-1c95-4d2a-b691-96e7b19982b1" CLIENT-IP="203.87.19.234:63734" X-SITE-DEPLOYMENT-ID="conform3d" WAS-DEFAULT-HOSTNAME="conform3d.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/zipdeploy?isAsync=true" X-Client-IP="203.87.19.234" X-Client-Port="63734" Content-Encoding="utf-8" >
+  <step title="Cleanup Xml Logs" date="2025-07-17T03:18:19.382" /><!-- duration: 51ms -->
+  <step title="ZipPushDeploy" date="2025-07-17T03:18:19.815" >
+    <step title="ZipDeploy. Extract zip." date="2025-07-17T03:18:19.933" /><!-- duration: 19ms -->
+    <step title="None repository commit" date="2025-07-17T03:18:20.645" >
+      <step title="Commit id: ec7e6b1a-5496-43bf-89e5-f0cbd57ca93a" date="2025-07-17T03:18:20.669" Message="N/A" AuthorName="N/A" AuthorEmail="N/A" /><!-- duration: 31ms -->
+    </step><!-- duration: 144ms -->
+    <step title="Starting PushDeployAsync" date="2025-07-17T03:18:20.841" /><!-- duration: 49ms -->
+    <step title="Writing artifact to /tmp/zipdeploy/e72ebd59-c98d-4c2e-93f7-565758f1afcb.zip" date="2025-07-17T03:18:21.471" >
+      <step title="Writing multipart request body to /tmp/zipdeploy/e72ebd59-c98d-4c2e-93f7-565758f1afcb.zip" date="2025-07-17T03:18:21.492" /><!-- duration: 21ms -->
+    </step><!-- duration: 1165ms -->
+    <step title="Start deployment in the background" date="2025-07-17T03:18:22.855" >
+      <step title="Acquiring Deployment Lock" date="2025-07-17T03:18:23.063" /><!-- duration: 62ms -->
+      <step title="Acquired Deployment Lock" date="2025-07-17T03:18:23.798" /><!-- duration: 70ms -->
+    </step><!-- duration: 1561ms -->
+  </step><!-- duration: 4711ms -->
+  <step title="Outgoing response" date="2025-07-17T03:18:24.597" type="response" statusCode="202" statusText="Accepted" /><!-- duration: 38ms -->
+</step><!-- duration: 5395ms -->
