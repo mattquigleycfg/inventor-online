@@ -298,7 +298,12 @@ namespace WebApplication.Services
             await _ossResiliencyPolicy.ExecuteAsync(async () =>
                     {
                         var api = new BucketsApi(OssV2Base);
-                        api.Configuration.AccessToken = await TwoLeggedAccessToken;
+                        string token = await TwoLeggedAccessToken;
+                        if (string.IsNullOrWhiteSpace(token))
+                        {
+                            throw new InvalidOperationException("Forge access token could not be obtained.");
+                        }
+                        api.Configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
                         await action(api);
                     });
         }
@@ -312,7 +317,12 @@ namespace WebApplication.Services
             return await _ossResiliencyPolicy.ExecuteAsync(async () =>
             {
                 var api = new BucketsApi(OssV2Base);
-                api.Configuration.AccessToken = await TwoLeggedAccessToken;
+                string token = await TwoLeggedAccessToken;
+                if (string.IsNullOrWhiteSpace(token))
+                {
+                    throw new InvalidOperationException("Forge access token could not be obtained.");
+                }
+                api.Configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
                 return await action(api);
             });
         }
@@ -326,7 +336,12 @@ namespace WebApplication.Services
             await _ossResiliencyPolicy.ExecuteAsync(async () =>
                     {
                         var api = new ObjectsApi(OssV2Base);
-                        api.Configuration.AccessToken = await TwoLeggedAccessToken;
+                        string token = await TwoLeggedAccessToken;
+                        if (string.IsNullOrWhiteSpace(token))
+                        {
+                            throw new InvalidOperationException("Forge access token could not be obtained.");
+                        }
+                        api.Configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
                         await action(api);
                     });
         }
@@ -340,7 +355,12 @@ namespace WebApplication.Services
             return await _ossResiliencyPolicy.ExecuteAsync(async () =>
             {
                 var api = new ObjectsApi(OssV2Base);
-                api.Configuration.AccessToken = await TwoLeggedAccessToken;
+                string token = await TwoLeggedAccessToken;
+                if (string.IsNullOrWhiteSpace(token))
+                {
+                    throw new InvalidOperationException("Forge access token could not be obtained.");
+                }
+                api.Configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
                 return await action(api);
             });
         }
@@ -404,6 +424,11 @@ namespace WebApplication.Services
                 }
                 
                 string accessToken = accessTokenElement.GetString();
+                if (string.IsNullOrWhiteSpace(accessToken))
+                {
+                    _logger.LogError($"Received empty access_token in response: {responseContent}");
+                    throw new Exception("Received empty access_token");
+                }
                 _logger.LogInformation("Successfully obtained v2 access token");
                 
                 return accessToken;
