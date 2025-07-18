@@ -1,3 +1,0 @@
-<step title="Startup Request" date="2023-11-15T10:18:51.817" instance="c8fb3b" url="/api/zipdeploy?isAsync=true" method="POST" type="request" pid="87,1,16" ScmType="None" >
-  <step title="Cleanup Xml Logs" date="2023-11-15T10:18:51.845" /><!-- duration: 13ms -->
-</step><!-- duration: 64ms -->

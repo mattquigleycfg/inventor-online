@@ -102,6 +102,14 @@ namespace WebApplication
             services.AddSingleton<AdoptProjectWithParametersPayloadProvider>();
             services.AddSingleton<IGuidGenerator, GuidGenerator>();
 
+            // Add background initialization service when initialization flags are set
+            if (Configuration.GetValue<bool>("initialize") || 
+                Configuration.GetValue<bool>("bundles") || 
+                Configuration.GetValue<bool>("clear"))
+            {
+                services.AddHostedService<Services.InitializationService>();
+            }
+
             if (Configuration.GetValue<bool>("migration"))
             {
                 services.AddHostedService<Worker>();

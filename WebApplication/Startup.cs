@@ -56,38 +56,19 @@ namespace WebApplication
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, Initializer initializer, 
-            ILogger<Startup> logger, LocalCache localCache, IOptions<ForgeConfiguration> forgeConfiguration,
-            Publisher publisher)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, 
+            ILogger<Startup> logger, LocalCache localCache)
         {
-            if(Configuration.GetValue<bool>("clear"))
+            // NOTE: Initialization (clear, initialize, bundles) is now handled by InitializationService
+            // background service to prevent blocking web server startup
+            
+            var hasInitializationFlags = Configuration.GetValue<bool>("initialize") || 
+                                        Configuration.GetValue<bool>("bundles") || 
+                                        Configuration.GetValue<bool>("clear");
+            
+            if (hasInitializationFlags)
             {
-                logger.LogInformation("-- Clean up --");
-                // retrieve used Forge Client Id and Client Id where it is allowed to delete user buckets
-                string clientIdCanDeleteUserBuckets = Configuration.GetValue<string>("clientIdCanDeleteUserBuckets");
-                string clientId = forgeConfiguration.Value.ClientId;
-                // only on allowed Client Id remove the user buckets
-                bool deleteUserBuckets = (clientIdCanDeleteUserBuckets == clientId);
-                initializer.ClearAsync(deleteUserBuckets).Wait();
-            }
-
-            if(Configuration.GetValue<bool>("initialize"))
-            {
-                // force polling check for initializer, because callbacks
-                // cannot be used at this point (no controllers are running yet)
-                var oldCheckType = publisher.CompletionCheck;
-                publisher.CompletionCheck = CompletionCheck.Polling;
-
-                initializer.InitializeAsync().Wait();
-
-                // reset configured value of completion check method
-                publisher.CompletionCheck = oldCheckType;
-            }
-
-            if(Configuration.GetValue<bool>("bundles"))
-            {
-                logger.LogInformation("-- Initialization of AppBundles and Activities --");
-                initializer.InitializeBundlesAsync().Wait();
+                logger.LogInformation("Initialization will be performed in background service");
             }
 
             if (env.IsDevelopment())

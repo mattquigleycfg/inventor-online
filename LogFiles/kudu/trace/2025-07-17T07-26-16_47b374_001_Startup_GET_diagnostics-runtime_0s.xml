@@ -1,3 +1,0 @@
-<step title="Startup Request" date="2025-07-17T07:26:16.113" instance="47b374" url="/diagnostics/runtime" method="GET" type="request" pid="825,1,32" ScmType="GitHubAction" >
-  <step title="Cleanup Xml Logs" date="2025-07-17T07:26:16.139" /><!-- duration: 8ms -->
-</step><!-- duration: 42ms -->

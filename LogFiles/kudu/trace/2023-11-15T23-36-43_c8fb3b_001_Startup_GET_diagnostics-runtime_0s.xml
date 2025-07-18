@@ -1,3 +1,0 @@
-<step title="Startup Request" date="2023-11-15T23:36:43.178" instance="c8fb3b" url="/diagnostics/runtime" method="GET" type="request" pid="88,1,7" ScmType="None" >
-  <step title="Cleanup Xml Logs" date="2023-11-15T23:36:43.451" /><!-- duration: 79ms -->
-</step><!-- duration: 388ms -->
