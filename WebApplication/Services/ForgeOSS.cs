@@ -50,7 +50,7 @@ namespace WebApplication.Services
 
         private readonly IHttpClientFactory _clientFactory;
         private readonly ILogger<ForgeOSS> _logger;
-        private static readonly Scope[] _scope = { Scope.DataRead, Scope.DataWrite, Scope.BucketCreate, Scope.BucketDelete, Scope.BucketRead };
+        private static readonly Scope[] _scope = { Scope.DataRead, Scope.DataWrite, Scope.BucketCreate, Scope.BucketDelete, Scope.BucketRead, Scope.CodeAll };
 
         private readonly IAsyncPolicy _ossResiliencyPolicy;
 
