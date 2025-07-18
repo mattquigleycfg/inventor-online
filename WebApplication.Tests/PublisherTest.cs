@@ -38,7 +38,7 @@ namespace WebApplication.Tests
             var workItemsApiMock = new Mock<IWorkItemsApi>();
             workItemsApiMock.Setup(mock => mock.CreateWorkItemAsync(
                     It.Is<WorkItem>(wi => wi.ActivityId.Equals("nickname.activityId+activityLabel")
-                                          && wi.Outputs.Any(output => output.Name == "onComplete" && output.Url.StartsWith(callbackUrlBase))),
+                                          && wi.Arguments.Any(arg => arg.Key == "onComplete" && ((XrefTreeArgument)arg.Value).Url.StartsWith(callbackUrlBase))),
                     null, null, true))
                 .Returns(Task.FromResult(new ApiResponse<WorkItemStatus>(null, new WorkItemStatus
                 {

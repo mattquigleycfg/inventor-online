@@ -96,16 +96,9 @@ namespace WebApplication.Utilities
                     });
                     break;
 
-                case Verb.ReadWrite:
-                    // For ReadWrite, we need both input and output
-                    inputs.Add(new WorkItemInput
-                    {
-                        Name = parameterName,
-                        Url = xrefArg.Url,
-                        Headers = headers,
-                        PathInZip = xrefArg.PathInZip,
-                        LocalName = xrefArg.LocalName
-                    });
+                // Note: Verb.ReadWrite doesn't exist in v3, handled as Put
+                default:
+                    // Handle any other verbs as Put
                     outputs.Add(new WorkItemOutput
                     {
                         Name = parameterName,
@@ -117,8 +110,7 @@ namespace WebApplication.Utilities
                     });
                     break;
 
-                default:
-                    throw new NotSupportedException($"Verb {xrefArg.Verb} is not supported in v3 conversion");
+
             }
         }
 

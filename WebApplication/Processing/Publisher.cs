@@ -79,15 +79,11 @@ namespace WebApplication.Processing
 
         public async Task<WorkItemStatus> RunWorkItemAsync(Dictionary<string, IArgument> workItemArgs, IForgeAppBase config)
         {
-            // Convert v2 arguments to v3 format
-            var workItemDefinition = WorkItemV3Builder.BuildWorkItemDefinition(workItemArgs);
-            
-            // create work item with v3 format
+            // For v3, we still use Arguments but with v3 endpoint
             var wi = new WorkItem
             {
                 ActivityId = await GetFullActivityId(config),
-                Inputs = workItemDefinition.Inputs,
-                Outputs = workItemDefinition.Outputs
+                Arguments = workItemArgs
             };
 
             // run WI and wait for completion
@@ -136,13 +132,12 @@ namespace WebApplication.Processing
             // build callback URL to be poked from FDA server on WI completion
             string callbackUrl = _callbackUrlBase + trackingKey;
             
-            // Add callback as v3 output
-            wi.Outputs = wi.Outputs ?? new List<WorkItemOutput>();
-            wi.Outputs.Add(new WorkItemOutput
+            // Add callback as argument (compatible with both v2 and v3)
+            wi.Arguments = wi.Arguments ?? new Dictionary<string, IArgument>();
+            wi.Arguments.Add("onComplete", new XrefTreeArgument
             {
-                Name = "onComplete",
                 Url = callbackUrl,
-                Verb = "post"
+                Verb = Verb.Post
             });
 
             try
