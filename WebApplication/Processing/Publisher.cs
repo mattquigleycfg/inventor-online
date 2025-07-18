@@ -79,30 +79,16 @@ namespace WebApplication.Processing
 
         public async Task<WorkItemStatus> RunWorkItemAsync(Dictionary<string, IArgument> workItemArgs, IForgeAppBase config)
         {
-            // create work item
+            // Convert v2 arguments to v3 format
+            var workItemDefinition = WorkItemV3Builder.BuildWorkItemDefinition(workItemArgs);
+            
+            // create work item with v3 format
             var wi = new WorkItem
             {
                 ActivityId = await GetFullActivityId(config),
-                Arguments = workItemArgs
+                Inputs = workItemDefinition.Inputs,
+                Outputs = workItemDefinition.Outputs
             };
-
-            // ADD START: Ensure Azure Blob uploads include correct headers
-            foreach (var arg in wi.Arguments.Values)
-            {
-                if (arg is XrefTreeArgument xrefArg && xrefArg.Verb == Verb.Put &&
-                    !string.IsNullOrEmpty(xrefArg.Url) &&
-                    xrefArg.Url.Contains(".blob.core.windows.net", StringComparison.OrdinalIgnoreCase))
-                {
-                    // Initialize headers dictionary if null
-                    xrefArg.Headers ??= new Dictionary<string, string>();
-                    // Azure requires the blob type header when uploading via SAS URL
-                    if (!xrefArg.Headers.ContainsKey("x-ms-blob-type"))
-                    {
-                        xrefArg.Headers["x-ms-blob-type"] = "BlockBlob";
-                    }
-                }
-            }
-            // ADD END
 
             // run WI and wait for completion
             var sw = Stopwatch.StartNew();
@@ -149,8 +135,15 @@ namespace WebApplication.Processing
 
             // build callback URL to be poked from FDA server on WI completion
             string callbackUrl = _callbackUrlBase + trackingKey;
-            var callbackOnComplete = new XrefTreeArgument { Verb = Verb.Post, Url = callbackUrl };
-            wi.Arguments.Add("onComplete", callbackOnComplete);
+            
+            // Add callback as v3 output
+            wi.Outputs = wi.Outputs ?? new List<WorkItemOutput>();
+            wi.Outputs.Add(new WorkItemOutput
+            {
+                Name = "onComplete",
+                Url = callbackUrl,
+                Verb = "post"
+            });
 
             try
             {

@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Autodesk.Forge.Core;
 using Autodesk.Forge.DesignAutomation.Http;
@@ -37,8 +38,7 @@ namespace WebApplication.Tests
             var workItemsApiMock = new Mock<IWorkItemsApi>();
             workItemsApiMock.Setup(mock => mock.CreateWorkItemAsync(
                     It.Is<WorkItem>(wi => wi.ActivityId.Equals("nickname.activityId+activityLabel")
-                                          && ((XrefTreeArgument) wi.Arguments["onComplete"]).Url.StartsWith(
-                                              callbackUrlBase)),
+                                          && wi.Outputs.Any(output => output.Name == "onComplete" && output.Url.StartsWith(callbackUrlBase))),
                     null, null, true))
                 .Returns(Task.FromResult(new ApiResponse<WorkItemStatus>(null, new WorkItemStatus
                 {
