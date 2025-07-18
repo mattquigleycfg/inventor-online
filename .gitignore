@@ -243,3 +243,6 @@ AWS-CICD/scripts/config.json
 
 AppBundles/InventorBinFolder.props
 WebApplication/package-lock.json
+
+# Ignore credentials file containing secrets
+credentials.md
