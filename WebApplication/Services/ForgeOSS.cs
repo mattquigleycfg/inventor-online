@@ -303,12 +303,8 @@ namespace WebApplication.Services
                         {
                             throw new InvalidOperationException("Forge access token could not be obtained.");
                         }
-                        if (api.Configuration.DefaultHeaders == null)
-                        {
-                            api.Configuration.DefaultHeaders = new System.Collections.Generic.Dictionary<string, string>();
-                        }
-                        api.Configuration.AccessToken = token; // set for SDK internals
                         api.Configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
+                        api.Configuration.AccessToken = token; // set for SDK internals
                         await action(api);
                     });
         }
@@ -327,12 +323,8 @@ namespace WebApplication.Services
                 {
                     throw new InvalidOperationException("Forge access token could not be obtained.");
                 }
-                if (api.Configuration.DefaultHeaders == null)
-                {
-                    api.Configuration.DefaultHeaders = new System.Collections.Generic.Dictionary<string, string>();
-                }
-                api.Configuration.AccessToken = token; // set for SDK internals
                 api.Configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
+                api.Configuration.AccessToken = token; // set for SDK internals
                 return await action(api);
             });
         }
@@ -351,12 +343,8 @@ namespace WebApplication.Services
                         {
                             throw new InvalidOperationException("Forge access token could not be obtained.");
                         }
-                        if (api.Configuration.DefaultHeaders == null)
-                        {
-                            api.Configuration.DefaultHeaders = new System.Collections.Generic.Dictionary<string, string>();
-                        }
-                        api.Configuration.AccessToken = token; // set for SDK internals
                         api.Configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
+                        api.Configuration.AccessToken = token; // set for SDK internals
                         await action(api);
                     });
         }
@@ -375,12 +363,8 @@ namespace WebApplication.Services
                 {
                     throw new InvalidOperationException("Forge access token could not be obtained.");
                 }
-                if (api.Configuration.DefaultHeaders == null)
-                {
-                    api.Configuration.DefaultHeaders = new System.Collections.Generic.Dictionary<string, string>();
-                }
-                api.Configuration.AccessToken = token; // set for SDK internals
                 api.Configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
+                api.Configuration.AccessToken = token; // set for SDK internals
                 return await action(api);
             });
         }
