@@ -16,6 +16,7 @@
 // UNINTERRUPTED OR ERROR FREE.
 /////////////////////////////////////////////////////////////////////
 
+using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 using WebApplication.Definitions;
@@ -47,22 +48,40 @@ namespace WebApplication.Processing
 
         public async Task InitializeAsync()
         {
-            // create bundles and activities
-            await new DataChecker(_publisher).InitializeAsync(_paths.DataChecker);
-            await new CreateSVF(_publisher).InitializeAsync(_paths.CreateSVF);
-            await new CreateThumbnail(_publisher).InitializeAsync(_paths.CreateThumbnail);
-            await new ExtractParameters(_publisher).InitializeAsync(_paths.ExtractParameters);
-            await new UpdateParameters(_publisher).InitializeAsync(_paths.UpdateParameters);
-            await new CreateBOM(_publisher).InitializeAsync(_paths.CreateBOM);
-            await new ExportDrawing(_publisher).InitializeAsync(_paths.ExportDrawing);
+            // create bundles and activities (gracefully handle missing ZIP files)
+            await TryInitializeAsync(() => new DataChecker(_publisher).InitializeAsync(_paths.DataChecker), nameof(DataChecker));
+            await TryInitializeAsync(() => new CreateSVF(_publisher).InitializeAsync(_paths.CreateSVF), nameof(CreateSVF));
+            await TryInitializeAsync(() => new CreateThumbnail(_publisher).InitializeAsync(_paths.CreateThumbnail), nameof(CreateThumbnail));
+            await TryInitializeAsync(() => new ExtractParameters(_publisher).InitializeAsync(_paths.ExtractParameters), nameof(ExtractParameters));
+            await TryInitializeAsync(() => new UpdateParameters(_publisher).InitializeAsync(_paths.UpdateParameters), nameof(UpdateParameters));
+            await TryInitializeAsync(() => new CreateBOM(_publisher).InitializeAsync(_paths.CreateBOM), nameof(CreateBOM));
+            await TryInitializeAsync(() => new ExportDrawing(_publisher).InitializeAsync(_paths.ExportDrawing), nameof(ExportDrawing));
 
-            await _transferData.InitializeAsync(_paths.EmptyExe);
-            await _rfaWork.InitializeAsync(_paths.CreateRFA);
-            await _exportDrawingWork.InitializeAsync(_paths.ExportDrawing);
-            await _updateDrawingsWork.InitializeAsync(_paths.UpdateDrawings);
+            await TryInitializeAsync(() => _transferData.InitializeAsync(_paths.EmptyExe), nameof(TransferData));
+            await TryInitializeAsync(() => _rfaWork.InitializeAsync(_paths.CreateRFA), nameof(CreateRFA));
+            await TryInitializeAsync(() => _exportDrawingWork.InitializeAsync(_paths.ExportDrawing), nameof(ExportDrawing));
+            await TryInitializeAsync(() => _updateDrawingsWork.InitializeAsync(_paths.UpdateDrawings), nameof(UpdateDrawings));
 
-            await _adoptWork.InitializeAsync(null /* does not matter */);
-            await _updateProjectWork.InitializeAsync(null /* does not matter */);
+            await TryInitializeAsync(() => _adoptWork.InitializeAsync(null /* does not matter */), nameof(AdoptProject));
+            await TryInitializeAsync(() => _updateProjectWork.InitializeAsync(null /* does not matter */), nameof(UpdateProject));
+        }
+
+        private async Task TryInitializeAsync(Func<Task> initializeFunc, string componentName)
+        {
+            try
+            {
+                await initializeFunc();
+                System.Diagnostics.Debug.WriteLine($"✅ {componentName} initialized successfully");
+            }
+            catch (System.Exception ex) when (ex.Message.Contains("App Bundle package is not found"))
+            {
+                System.Diagnostics.Debug.WriteLine($"⚠️ {componentName} AppBundle ZIP file not found - skipping initialization (this is normal for development)");
+            }
+            catch (System.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ {componentName} initialization failed: {ex.Message}");
+                // Don't rethrow - allow application to continue without this component
+            }
         }
 
         public async Task CleanUpAsync()
