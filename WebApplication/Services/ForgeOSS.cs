@@ -303,6 +303,10 @@ namespace WebApplication.Services
                         {
                             throw new InvalidOperationException("Forge access token could not be obtained.");
                         }
+                        if (api.Configuration.DefaultHeaders == null)
+                        {
+                            api.Configuration.DefaultHeaders = new System.Collections.Generic.Dictionary<string, string>();
+                        }
                         api.Configuration.AccessToken = token; // set for SDK internals
                         api.Configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
                         await action(api);
@@ -322,6 +326,10 @@ namespace WebApplication.Services
                 if (string.IsNullOrWhiteSpace(token))
                 {
                     throw new InvalidOperationException("Forge access token could not be obtained.");
+                }
+                if (api.Configuration.DefaultHeaders == null)
+                {
+                    api.Configuration.DefaultHeaders = new System.Collections.Generic.Dictionary<string, string>();
                 }
                 api.Configuration.AccessToken = token; // set for SDK internals
                 api.Configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
@@ -343,6 +351,10 @@ namespace WebApplication.Services
                         {
                             throw new InvalidOperationException("Forge access token could not be obtained.");
                         }
+                        if (api.Configuration.DefaultHeaders == null)
+                        {
+                            api.Configuration.DefaultHeaders = new System.Collections.Generic.Dictionary<string, string>();
+                        }
                         api.Configuration.AccessToken = token; // set for SDK internals
                         api.Configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
                         await action(api);
@@ -362,6 +374,10 @@ namespace WebApplication.Services
                 if (string.IsNullOrWhiteSpace(token))
                 {
                     throw new InvalidOperationException("Forge access token could not be obtained.");
+                }
+                if (api.Configuration.DefaultHeaders == null)
+                {
+                    api.Configuration.DefaultHeaders = new System.Collections.Generic.Dictionary<string, string>();
                 }
                 api.Configuration.AccessToken = token; // set for SDK internals
                 api.Configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
