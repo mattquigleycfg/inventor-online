@@ -65,9 +65,13 @@ namespace WebApplication.Services
             // If no connection string, use the direct URL approach
             if (string.IsNullOrEmpty(_connectionString))
             {
-                _baseUrl = configuration["AzureBlobStorage:BaseUrl"] ?? "https://conform3d.blob.core.windows.net/models";
-                _sasToken = configuration["AzureBlobStorage:SasToken"] ?? 
-                           "sp=r&st=2025-07-18T01:15:44Z&se=2025-07-18T09:30:44Z&spr=https&sv=2024-11-04&sr=c&sig=vHQUX6uWbsKV5IVkB4d297nP3No1wBkDpUTzdTaxre8%3D";
+                _baseUrl = configuration["AzureBlobStorage:BaseUrl"] ?? Environment.GetEnvironmentVariable("AZURE_BLOB_BASE_URL");
+
+                // Prefer environment variable over configuration for SAS token (safer for production).
+                _sasToken = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AZURE_BLOB_SAS_TOKEN"))
+                    ? Environment.GetEnvironmentVariable("AZURE_BLOB_SAS_TOKEN")
+                    : configuration["AzureBlobStorage:SasToken"];
+
                 _isConfigured = !string.IsNullOrEmpty(_sasToken);
                 
                 // Create BlobServiceClient with SAS token
@@ -81,7 +85,7 @@ namespace WebApplication.Services
             else
             {
                 // Parse connection string for direct access
-                _baseUrl = "https://conform3d.blob.core.windows.net/models";
+                _baseUrl = configuration["AzureBlobStorage:BaseUrl"] ?? "https://conform3d.blob.core.windows.net/models";
                 _isConfigured = true;
                 _blobServiceClient = new BlobServiceClient(_connectionString);
             }

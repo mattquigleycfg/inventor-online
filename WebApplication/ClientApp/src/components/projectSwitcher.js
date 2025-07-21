@@ -33,7 +33,9 @@ export class ProjectSwitcher extends Component {
     }
 
     componentDidMount() {
-        this.props.fetchProjects();
+        // Do not automatically fetch Forge projects on load.
+        // In the new Azure-first flow we only need Forge data when user explicitly requests it.
+        // this.props.fetchProjects();
     }
 
     onProjectClick(event) {

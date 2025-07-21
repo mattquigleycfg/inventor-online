@@ -35,8 +35,9 @@ export class App extends Component {
     props.detectToken();
   }
   componentDidMount() {
-    if (!this.props.embeddedModeEnabled)
-      this.props.fetchShowParametersChanged();
+    // Skip checking Forge-based parameter-change flag on initial load when running in Azure-only mode.
+    // if (!this.props.embeddedModeEnabled)
+    //   this.props.fetchShowParametersChanged();
 
     if (this.props.embeddedModeUrl != null)
       this.props.adoptProjectWithParameters(this.props.embeddedModeUrl);
