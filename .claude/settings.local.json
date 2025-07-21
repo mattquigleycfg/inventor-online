@@ -2,7 +2,16 @@
   "permissions": {
     "allow": [
       "Bash(dotnet build)",
-      "WebFetch(domain:aps.autodesk.com)"
+      "WebFetch(domain:aps.autodesk.com)",
+      "Bash(dotnet watch:*)",
+      "Bash(dotnet build:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(dotnet run)",
+      "Bash(taskkill:*)",
+      "Bash(powershell:*)",
+      "Bash(dotnet list package:*)",
+      "Bash(dotnet package search:*)",
+      "Bash(cmd /c:*)"
     ],
     "deny": []
   }

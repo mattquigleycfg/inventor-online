@@ -222,12 +222,69 @@ namespace WebApplication.Services
 
         public async Task UploadObjectAsync(string bucketKey, string objectName, Stream stream)
         {
-            await WithObjectsApiAsync(async api => await api.UploadObjectAsync(bucketKey, objectName, 0, stream));
+            const int MAX_DIRECT_UPLOAD_SIZE = 100 * 1024 * 1024; // 100MB max for direct upload
+            
+            try
+            {
+                // Get stream length
+                long streamLength = stream.Length;
+                _logger.LogInformation($"Uploading {objectName} ({streamLength} bytes) to bucket {bucketKey}");
+                
+                if (streamLength > MAX_DIRECT_UPLOAD_SIZE)
+                {
+                    // For very large files, use signed URL upload
+                    _logger.LogInformation($"File too large for direct upload. Using signed URL approach.");
+                    await UploadUsingSignedUrlAsync(bucketKey, objectName, stream);
+                }
+                else
+                {
+                    // For files up to 100MB, use direct upload
+                    await WithObjectsApiAsync(async api => await api.UploadObjectAsync(bucketKey, objectName, (int)streamLength, stream));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error uploading {objectName} to bucket {bucketKey}");
+                throw;
+            }
+        }
+        
+        private async Task UploadUsingSignedUrlAsync(string bucketKey, string objectName, Stream stream)
+        {
+            try
+            {
+                // First create the object with signed URL for write access
+                var signedUrl = await CreateSignedUrlAsync(bucketKey, objectName, ObjectAccess.Write, 60); // 60 minutes expiration
+                
+                _logger.LogInformation($"Created signed URL for upload: {objectName}");
+                
+                // Upload using HTTP client directly
+                using var httpClient = _clientFactory.CreateClient();
+                httpClient.Timeout = TimeSpan.FromMinutes(30); // Increase timeout for large files
+                
+                using var content = new StreamContent(stream);
+                content.Headers.ContentLength = stream.Length;
+                
+                var response = await httpClient.PutAsync(signedUrl, content);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    throw new Exception($"Failed to upload using signed URL: {response.StatusCode} - {error}");
+                }
+                
+                _logger.LogInformation($"Successfully uploaded {objectName} using signed URL");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error in signed URL upload for {objectName}");
+                throw;
+            }
         }
 
         public async Task UploadChunkAsync(string bucketKey, string objectName, string contentRange, string sessionId, Stream stream)
         {
-            await WithObjectsApiAsync(async api => await api.UploadChunkAsync(bucketKey, objectName, 0, contentRange, sessionId, stream));
+            await WithObjectsApiAsync(async api => await api.UploadChunkAsync(bucketKey, objectName, (int)stream.Length, contentRange, sessionId, stream));
         }
 
         /// <summary>
@@ -337,14 +394,23 @@ namespace WebApplication.Services
         {
             await _ossResiliencyPolicy.ExecuteAsync(async () =>
                     {
-                        var api = new ObjectsApi(OssV2Base);
                         string token = await TwoLeggedAccessToken;
                         if (string.IsNullOrWhiteSpace(token))
                         {
                             throw new InvalidOperationException("Forge access token could not be obtained.");
                         }
-                        api.Configuration.AccessToken = token;
-                        api.Configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
+                        
+                        // Create configuration with access token
+                        var configuration = new Configuration 
+                        { 
+                            AccessToken = token,
+                            ApiClient = new ApiClient(OssV2Base)
+                        };
+                        configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
+                        
+                        // Create API with configuration
+                        var api = new ObjectsApi(configuration);
+                        
                         await action(api);
                     });
         }
@@ -357,14 +423,23 @@ namespace WebApplication.Services
         {
             return await _ossResiliencyPolicy.ExecuteAsync(async () =>
             {
-                var api = new ObjectsApi(OssV2Base);
                 string token = await TwoLeggedAccessToken;
                 if (string.IsNullOrWhiteSpace(token))
                 {
                     throw new InvalidOperationException("Forge access token could not be obtained.");
                 }
-                api.Configuration.AccessToken = token;
-                api.Configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
+                
+                // Create configuration with access token
+                var configuration = new Configuration 
+                { 
+                    AccessToken = token,
+                    ApiClient = new ApiClient(OssV2Base)
+                };
+                configuration.AddDefaultHeader("Authorization", $"Bearer {token}");
+                
+                // Create API with configuration
+                var api = new ObjectsApi(configuration);
+                
                 return await action(api);
             });
         }

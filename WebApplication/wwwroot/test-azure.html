@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Integration Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #0696d7;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #0696d7;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .test-button:hover {
+            background: #0576b7;
+        }
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        .error {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .endpoint {
+            background: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            display: inline-block;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Azure Integration Test Suite</h1>
+        
+        <div class="info-box">
+            <h3>Test Instructions:</h3>
+            <ol>
+                <li>Click each test button to verify different aspects of the Azure integration</li>
+                <li>Review the JSON responses to ensure everything is working correctly</li>
+                <li>Check the browser console (F12) for additional debug information</li>
+                <li>Make sure your application is running on the expected port</li>
+            </ol>
+        </div>
+
+        <!-- Test 1: Check Configuration -->
+        <div class="test-section">
+            <h2>Test 1: Check Azure Configuration</h2>
+            <p>Verifies that Azure Blob Storage is properly configured and accessible.</p>
+            <button class="test-button" onclick="testAzureConfig()">Run Test</button>
+            <div id="config-result"></div>
+        </div>
+
+        <!-- Test 2: List Blobs -->
+        <div class="test-section">
+            <h2>Test 2: List Azure Blobs</h2>
+            <p>Lists all blobs in your Azure storage container.</p>
+            <button class="test-button" onclick="testListBlobs()">List All Blobs</button>
+            <button class="test-button" onclick="testListBlobs('svf/')">List SVF Blobs</button>
+            <div id="blobs-result"></div>
+        </div>
+
+        <!-- Test 3: Generate SAS URL -->
+        <div class="test-section">
+            <h2>Test 3: Generate SAS URL</h2>
+            <p>Generates a SAS URL for accessing a blob.</p>
+            <input type="text" id="blob-name" placeholder="Enter blob name" value="test.txt" style="padding: 8px; margin-right: 10px;">
+            <button class="test-button" onclick="testGenerateSAS()">Generate SAS</button>
+            <div id="sas-result"></div>
+        </div>
+
+        <!-- Test 4: Model Derivative -->
+        <div class="test-section">
+            <h2>Test 4: Model Derivative API</h2>
+            <p>Tests Forge/APS Model Derivative API integration.</p>
+            <button class="test-button" onclick="testCreateBucket()">Create Test Bucket</button>
+            <div id="bucket-result"></div>
+        </div>
+
+        <!-- Test 5: Full Workflow -->
+        <div class="test-section">
+            <h2>Test 5: Full Translation Workflow</h2>
+            <p>Tests the complete workflow: Azure → Forge → Model Derivative.</p>
+            <input type="text" id="azure-file" placeholder="Azure blob name" value="MRConfigurator.zip" style="padding: 8px; margin-right: 10px;">
+            <button class="test-button" onclick="testFullWorkflow()">Run Full Workflow</button>
+            <div id="workflow-result"></div>
+        </div>
+
+        <!-- Test 6: Check Translation -->
+        <div class="test-section">
+            <h2>Test 6: Check Translation Progress</h2>
+            <p>Check the progress of a Model Derivative translation job.</p>
+            <input type="text" id="urn-input" placeholder="Enter URN" style="padding: 8px; margin-right: 10px; width: 300px;">
+            <button class="test-button" onclick="testCheckTranslation()">Check Progress</button>
+            <div id="translation-result"></div>
+        </div>
+
+        <!-- Test 7: Azure Models List -->
+        <div class="test-section">
+            <h2>Test 7: Azure Models API</h2>
+            <p>Tests the Azure models listing endpoint.</p>
+            <button class="test-button" onclick="testAzureModels()">List Azure Models</button>
+            <div id="models-result"></div>
+        </div>
+
+        <!-- Test 8: List ZIP Contents -->
+        <div class="test-section">
+            <h2>Test 8: List ZIP Contents</h2>
+            <p>Lists the contents of a ZIP file to find the root file.</p>
+            <input type="text" id="zip-file" placeholder="ZIP file name" value="MRConfigurator.zip" style="padding: 8px; margin-right: 10px;">
+            <button class="test-button" onclick="testListZipContents()">List Contents</button>
+            <div id="zip-result"></div>
+        </div>
+
+        <!-- API Reference -->
+        <div class="test-section">
+            <h2>API Endpoints Reference</h2>
+            <p>You can also test these endpoints directly using tools like Postman or curl:</p>
+            <div class="endpoint">GET /api/test/azure/check-config</div><br>
+            <div class="endpoint">GET /api/test/azure/list-blobs?prefix=svf</div><br>
+            <div class="endpoint">POST /api/test/azure/create-test-bucket</div><br>
+            <div class="endpoint">GET /api/test/azure/generate-sas?blobName=test.txt</div><br>
+            <div class="endpoint">POST /api/test/azure/test-full-workflow?azureBlobName=file.zip</div><br>
+            <div class="endpoint">GET /api/test/azure/check-translation?urn=YOUR_URN</div><br>
+            <div class="endpoint">GET /api/azure-models</div><br>
+            <div class="endpoint">POST /api/modelderivative/translate/azure/{blobName}</div>
+        </div>
+    </div>
+
+    <script>
+        // Helper function to display results
+        function displayResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.className = 'result ' + (isError ? 'error' : 'success');
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+
+        function displayLoading(elementId) {
+            const element = document.getElementById(elementId);
+            element.className = 'result loading';
+            element.textContent = 'Loading...';
+        }
+
+        // Test 1: Check Azure Configuration
+        async function testAzureConfig() {
+            displayLoading('config-result');
+            try {
+                const response = await fetch('/api/test/azure/check-config');
+                const data = await response.json();
+                displayResult('config-result', data, data.status === 'error');
+            } catch (error) {
+                displayResult('config-result', { error: error.message }, true);
+            }
+        }
+
+        // Test 2: List Blobs
+        async function testListBlobs(prefix = '') {
+            displayLoading('blobs-result');
+            try {
+                const url = prefix ? `/api/test/azure/list-blobs?prefix=${prefix}` : '/api/test/azure/list-blobs';
+                const response = await fetch(url);
+                const data = await response.json();
+                displayResult('blobs-result', data, data.status === 'error');
+            } catch (error) {
+                displayResult('blobs-result', { error: error.message }, true);
+            }
+        }
+
+        // Test 3: Generate SAS URL
+        async function testGenerateSAS() {
+            const blobName = document.getElementById('blob-name').value;
+            if (!blobName) {
+                displayResult('sas-result', { error: 'Please enter a blob name' }, true);
+                return;
+            }
+            
+            displayLoading('sas-result');
+            try {
+                const response = await fetch(`/api/test/azure/generate-sas?blobName=${encodeURIComponent(blobName)}`);
+                const data = await response.json();
+                displayResult('sas-result', data, data.status === 'error');
+            } catch (error) {
+                displayResult('sas-result', { error: error.message }, true);
+            }
+        }
+
+        // Test 4: Create Bucket
+        async function testCreateBucket() {
+            displayLoading('bucket-result');
+            try {
+                const response = await fetch('/api/test/azure/create-test-bucket', { method: 'POST' });
+                const data = await response.json();
+                displayResult('bucket-result', data, data.status === 'error');
+            } catch (error) {
+                displayResult('bucket-result', { error: error.message }, true);
+            }
+        }
+
+        // Test 5: Full Workflow
+        async function testFullWorkflow() {
+            const azureFile = document.getElementById('azure-file').value;
+            if (!azureFile) {
+                displayResult('workflow-result', { error: 'Please enter an Azure blob name' }, true);
+                return;
+            }
+            
+            displayLoading('workflow-result');
+            try {
+                const response = await fetch(`/api/test/azure/test-full-workflow?azureBlobName=${encodeURIComponent(azureFile)}`, { 
+                    method: 'POST' 
+                });
+                const data = await response.json();
+                displayResult('workflow-result', data, data.status === 'error');
+                
+                // If successful, populate the URN field for checking progress
+                if (data.steps && data.steps.translationStarted) {
+                    document.getElementById('urn-input').value = data.steps.translationStarted;
+                }
+            } catch (error) {
+                displayResult('workflow-result', { error: error.message }, true);
+            }
+        }
+
+        // Test 6: Check Translation
+        async function testCheckTranslation() {
+            const urn = document.getElementById('urn-input').value;
+            if (!urn) {
+                displayResult('translation-result', { error: 'Please enter a URN' }, true);
+                return;
+            }
+            
+            displayLoading('translation-result');
+            try {
+                const response = await fetch(`/api/test/azure/check-translation?urn=${encodeURIComponent(urn)}`);
+                const data = await response.json();
+                displayResult('translation-result', data, data.status === 'error');
+            } catch (error) {
+                displayResult('translation-result', { error: error.message }, true);
+            }
+        }
+
+        // Test 7: Azure Models
+        async function testAzureModels() {
+            displayLoading('models-result');
+            try {
+                const response = await fetch('/api/azure-models');
+                const data = await response.json();
+                displayResult('models-result', data, response.status !== 200);
+            } catch (error) {
+                displayResult('models-result', { error: error.message }, true);
+            }
+        }
+
+        // Test 8: List ZIP Contents
+        async function testListZipContents() {
+            const zipFile = document.getElementById('zip-file').value;
+            if (!zipFile) {
+                displayResult('zip-result', { error: 'Please enter a ZIP file name' }, true);
+                return;
+            }
+            
+            displayLoading('zip-result');
+            try {
+                const response = await fetch(`/api/test/azure/list-zip-contents?azureBlobName=${encodeURIComponent(zipFile)}`);
+                const data = await response.json();
+                displayResult('zip-result', data, data.status === 'error');
+            } catch (error) {
+                displayResult('zip-result', { error: error.message }, true);
+            }
+        }
+
+        // Run initial test on page load
+        window.onload = () => {
+            testAzureConfig();
+        };
+    </script>
+</body>
+</html>

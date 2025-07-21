@@ -31,32 +31,34 @@ namespace WebApplication.Services
         private readonly ILogger<ModelDerivativeService> _logger;
         private readonly IConfiguration _configuration;
         private readonly IForgeOSS _forgeOSS;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly string _clientId;
         private readonly string _clientSecret;
-        private HttpClient _httpClient;
+        private string _accessToken;
+        private DateTime _tokenExpiry;
 
         public ModelDerivativeService(
             IConfiguration configuration, 
             ILogger<ModelDerivativeService> logger,
-            IForgeOSS forgeOSS)
+            IForgeOSS forgeOSS,
+            IHttpClientFactory httpClientFactory)
         {
             _configuration = configuration;
             _logger = logger;
             _forgeOSS = forgeOSS;
+            _httpClientFactory = httpClientFactory;
             _clientId = configuration["Forge:clientId"];
             _clientSecret = configuration["Forge:clientSecret"];
-            _httpClient = new HttpClient();
         }
 
         public async Task<string> CreateBucketAsync(string bucketKey)
         {
             try
             {
-                var scope = new Scope[] { Scope.BucketCreate, Scope.BucketRead, Scope.DataRead, Scope.DataWrite };
-                var token = await GetAccessTokenAsync(scope);
+                var accessToken = await GetAccessTokenAsync();
                 
                 var api = new BucketsApi();
-                api.Configuration.AccessToken = token.AccessToken;
+                api.Configuration.AccessToken = accessToken;
 
                 var bucketPayload = new PostBucketsPayload(
                     bucketKey,
@@ -64,9 +66,10 @@ namespace WebApplication.Services
                     PostBucketsPayload.PolicyKeyEnum.Transient
                 );
 
-                var result = await api.CreateBucketAsync(bucketPayload);
-                _logger.LogInformation($"Bucket created: {result.BucketKey}");
-                return result.BucketKey;
+                dynamic result = await api.CreateBucketAsync(bucketPayload);
+                string createdBucketKey = result.bucketKey;
+                _logger.LogInformation($"Bucket created: {createdBucketKey}");
+                return createdBucketKey;
             }
             catch (Autodesk.Forge.Client.ApiException ex)
             {
@@ -84,22 +87,30 @@ namespace WebApplication.Services
         {
             try
             {
-                var scope = new Scope[] { Scope.DataWrite, Scope.DataRead };
-                var token = await GetAccessTokenAsync(scope);
-
-                var api = new ObjectsApi();
-                api.Configuration.AccessToken = token.AccessToken;
-
-                var result = await api.UploadObjectAsync(
-                    bucketKey,
-                    objectName,
-                    (int)fileStream.Length,
-                    fileStream,
-                    "application/octet-stream"
-                );
-
-                _logger.LogInformation($"File uploaded: {result.ObjectId}");
-                return result;
+                // Use the existing ForgeOSS service to upload the file
+                await _forgeOSS.UploadObjectAsync(bucketKey, objectName, fileStream);
+                
+                // Get the uploaded object details
+                var objects = await _forgeOSS.GetBucketObjectsAsync(bucketKey, objectName);
+                var uploadedObject = objects.Find(o => o.ObjectKey == objectName);
+                
+                if (uploadedObject != null)
+                {
+                    _logger.LogInformation($"File uploaded: {uploadedObject.ObjectId}");
+                    return uploadedObject;
+                }
+                else
+                {
+                    // If we can't find the object in the list, create a basic ObjectDetails
+                    var objectDetails = new ObjectDetails
+                    {
+                        BucketKey = bucketKey,
+                        ObjectKey = objectName,
+                        ObjectId = $"urn:adsk.objects:os.object:{bucketKey}/{objectName}"
+                    };
+                    _logger.LogInformation($"File uploaded: {objectDetails.ObjectId}");
+                    return objectDetails;
+                }
             }
             catch (Exception ex)
             {
@@ -112,8 +123,7 @@ namespace WebApplication.Services
         {
             try
             {
-                var scope = new Scope[] { Scope.DataRead, Scope.DataWrite, Scope.DataCreate };
-                var token = await GetAccessTokenAsync(scope);
+                var accessToken = await GetAccessTokenAsync();
 
                 var urn = Base64Encode(objectId);
                 
@@ -141,10 +151,11 @@ namespace WebApplication.Services
                 var json = JsonConvert.SerializeObject(translateRequest);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                _httpClient.DefaultRequestHeaders.Authorization = 
-                    new AuthenticationHeaderValue("Bearer", token.AccessToken);
+                using var httpClient = _httpClientFactory.CreateClient();
+                httpClient.DefaultRequestHeaders.Authorization = 
+                    new AuthenticationHeaderValue("Bearer", accessToken);
 
-                var response = await _httpClient.PostAsync(
+                var response = await httpClient.PostAsync(
                     "https://developer.api.autodesk.com/modelderivative/v2/designdata/job",
                     content
                 );
@@ -174,19 +185,18 @@ namespace WebApplication.Services
         {
             try
             {
-                var scope = new Scope[] { Scope.DataRead };
-                var token = await GetAccessTokenAsync(scope);
+                var accessToken = await GetAccessTokenAsync();
 
                 var api = new DerivativesApi();
-                api.Configuration.AccessToken = token.AccessToken;
+                api.Configuration.AccessToken = accessToken;
 
-                var manifest = await api.GetManifestAsync(urn);
+                dynamic manifest = await api.GetManifestAsync(urn);
                 
                 var progress = new JobProgress
                 {
-                    Status = manifest.Status,
-                    Progress = manifest.Progress,
-                    HasDerivatives = manifest.Derivatives?.Count > 0
+                    Status = manifest.status,
+                    Progress = manifest.progress,
+                    HasDerivatives = manifest.derivatives != null && manifest.derivatives.Count > 0
                 };
 
                 _logger.LogInformation($"Translation progress for {urn}: {progress.Status} - {progress.Progress}");
@@ -203,13 +213,22 @@ namespace WebApplication.Services
         {
             try
             {
-                var scope = new Scope[] { Scope.DataRead };
-                var token = await GetAccessTokenAsync(scope);
+                var accessToken = await GetAccessTokenAsync();
 
                 var api = new DerivativesApi();
-                api.Configuration.AccessToken = token.AccessToken;
+                api.Configuration.AccessToken = accessToken;
 
-                return await api.GetManifestAsync(urn);
+                dynamic result = await api.GetManifestAsync(urn);
+                
+                // Create Manifest object from dynamic result
+                var manifest = new Manifest();
+                manifest.Urn = result.urn;
+                manifest.Status = result.status;
+                manifest.Progress = result.progress;
+                manifest.Type = result.type;
+                manifest.Region = result.region;
+                
+                return manifest;
             }
             catch (Exception ex)
             {
@@ -228,11 +247,10 @@ namespace WebApplication.Services
         {
             try
             {
-                var scope = new Scope[] { Scope.DataWrite };
-                var token = await GetAccessTokenAsync(scope);
+                var accessToken = await GetAccessTokenAsync();
 
                 var api = new ObjectsApi();
-                api.Configuration.AccessToken = token.AccessToken;
+                api.Configuration.AccessToken = accessToken;
 
                 await api.DeleteObjectAsync(bucketKey, objectId);
                 _logger.LogInformation($"Object deleted: {objectId}");
@@ -245,11 +263,6 @@ namespace WebApplication.Services
             }
         }
 
-        private async Task<Bearer> GetAccessTokenAsync(Scope[] scopes)
-        {
-            var auth = new TwoLeggedApi();
-            return await auth.AuthenticateAsync(_clientId, _clientSecret, "client_credentials", scopes);
-        }
 
         private string Base64Encode(string plainText)
         {
@@ -258,6 +271,60 @@ namespace WebApplication.Services
                 .TrimEnd('=')
                 .Replace('+', '-')
                 .Replace('/', '_');
+        }
+
+        private async Task<string> GetAccessTokenAsync()
+        {
+            // Check if we have a valid token
+            if (!string.IsNullOrEmpty(_accessToken) && _tokenExpiry > DateTime.UtcNow.AddMinutes(5))
+            {
+                return _accessToken;
+            }
+
+            // Get new token
+            _logger.LogInformation("Refreshing Forge access token for Model Derivative");
+            
+            using var httpClient = _httpClientFactory.CreateClient();
+            
+            // Encode client credentials for Basic authentication (v2 requirement)
+            var credentials = Convert.ToBase64String(
+                Encoding.UTF8.GetBytes($"{_clientId}:{_clientSecret}")
+            );
+            
+            // Set up headers for v2 endpoint
+            httpClient.DefaultRequestHeaders.Authorization = 
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", credentials);
+            
+            // Prepare form data (client credentials NOT in body for v2)
+            var requestBody = new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("grant_type", "client_credentials"),
+                new KeyValuePair<string, string>("scope", "data:read data:write data:create bucket:create bucket:read bucket:delete")
+            });
+
+            var response = await httpClient.PostAsync(
+                "https://developer.api.autodesk.com/authentication/v2/token",
+                requestBody
+            );
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                dynamic result = JObject.Parse(content);
+                
+                _accessToken = result.access_token;
+                int expiresIn = result.expires_in;
+                _tokenExpiry = DateTime.UtcNow.AddSeconds(expiresIn);
+                
+                _logger.LogInformation("Successfully obtained Forge access token");
+                return _accessToken;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                _logger.LogError($"Failed to get access token: {error}");
+                throw new Exception($"Failed to get access token: {response.StatusCode}");
+            }
         }
     }
 
