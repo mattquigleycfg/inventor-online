@@ -127,25 +127,16 @@ namespace WebApplication.Services
                 {
                     new ModelInfo
                     {
-                        Name = "MRConfigurator.zip",
+                        Name = "MRConfigurator",
                         DisplayName = "MR Configurator",
-                        Url = $"{_baseUrl}/MRConfigurator.zip?{_sasToken}",
-                        ContentType = "application/zip",
-                        Size = 0, // We'll get this from HEAD request if needed
+                        Url = $"{_baseUrl}/MRConfigurator/output/bubble.json?{_sasToken}",
+                        ContentType = "application/json",
+                        Size = 0,
                         LastModified = DateTime.UtcNow.AddDays(-1)
                     }
                 };
 
-                // Verify the model exists
-                foreach (var model in models.ToList())
-                {
-                    var exists = await ModelExistsAsync(model.Name);
-                    if (!exists)
-                    {
-                        _logger.LogWarning($"Model {model.Name} does not exist in Azure Storage");
-                        models.Remove(model);
-                    }
-                }
+                // Skip existence check here; viewer will handle 404 if path invalid.
 
                 return models;
             }
