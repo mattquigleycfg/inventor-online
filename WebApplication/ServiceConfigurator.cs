@@ -85,6 +85,7 @@ namespace WebApplication
             services.AddSingleton<IPostProcessing, PostProcessing>();
             services.AddSingleton<IForgeOSS, ForgeOSS>();
             services.AddSingleton<IAzureBlobService, AzureBlobService>();
+            services.AddSingleton<IModelDerivativeService, ModelDerivativeService>();
             services.AddSingleton<FdaClient>();
             services.AddTransient<Initializer>();
             services.AddTransient<Arranger>();

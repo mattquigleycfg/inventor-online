@@ -87,7 +87,8 @@ namespace CreateSVFPlugin
                         if (oAddin.get_HasSaveCopyAsOptions(Doc, oContext, oOptions))
                         {
                             oOptions.set_Value("GeometryType", 1);
-                            oOptions.set_Value("EnableExpressTranslation", false);
+                            // Enable express translation for better performance as recommended in the guide
+                            oOptions.set_Value("EnableExpressTranslation", true);
                             oOptions.set_Value("SVFFileOutputDir", sessionDir);
                             oOptions.set_Value("ExportFileProperties", true);
                             oOptions.set_Value("ObfuscateLabels", false);
