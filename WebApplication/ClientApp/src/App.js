@@ -22,7 +22,6 @@ import Surface from '@hig/surface';
 import './app.css';
 import Toolbar from './components/toolbar';
 import TabsContainer from './components/tabsContainer';
-import ProjectSwitcher from './components/projectSwitcher';
 import { showAdoptWithParamsFailed, fetchShowParametersChanged } from './actions/uiFlagsActions';
 import { detectToken } from './actions/profileActions';
 import ModalProgress from './components/modalProgress';
@@ -49,9 +48,7 @@ export class App extends Component {
     return (
       <Surface className="fullheight" id="main" level={200}>
         { showToolbar &&
-          <Toolbar>
-            <ProjectSwitcher />
-          </Toolbar>
+          <Toolbar />
         }
         <TabsContainer/>
         {this.props.adoptWithParamsProgressShowing &&

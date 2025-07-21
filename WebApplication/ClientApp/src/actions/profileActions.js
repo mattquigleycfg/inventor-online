@@ -76,7 +76,7 @@ export const detectToken = () => (dispatch) => {
             // Clean up URL - remove both query params and hash
             window.history.replaceState({}, document.title, window.location.pathname);
         } else {
-            dispatch(addLog('Access token is not found'));
+            // Silently ignore when token is absent – app runs in anonymous Azure mode.
             repo.forgetAccessToken();
         }
     } catch (error) {
