@@ -109,7 +109,25 @@ namespace WebApplication.Services
         {
             bucket ??= await _userResolver.GetBucketAsync(true);
 
-            var objectDetails = (await bucket.GetObjectsAsync(ONC.ProjectsMask));
+            // OSS bucket creation is eventually consistent. Right after creation the first
+            // "list objects" call may return 404 ("bucket not found"). When that happens the
+            // Polly policy that we already use for signed-URL generation can be re-used here
+            // so that we wait a little and retry instead of propagating the exception up the
+            // call-stack (which results in a 500 for the caller).
+            List<ObjectDetails> objectDetails;
+            try
+            {
+                objectDetails = await _waitForBucketPolicy.ExecuteAsync(async () =>
+                    await bucket.GetObjectsAsync(ONC.ProjectsMask));
+            }
+            catch (ApiException e) when (e.ErrorCode == StatusCodes.Status404NotFound)
+            {
+                // The bucket is still not available after the retries – just treat this as
+                // "no projects yet" instead of failing the whole request.
+                _logger.LogWarning("Bucket {BucketKey} still not available when listing projects – returning empty list", bucket.BucketKey);
+                return new List<string>();
+            }
+
             var projectNames = objectDetails
                 .Select(objDetails => ONC.ToProjectName(objDetails.ObjectKey))
                 .ToList();
