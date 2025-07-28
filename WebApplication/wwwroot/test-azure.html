@@ -159,6 +159,23 @@
             <div id="models-result"></div>
         </div>
 
+        <!-- Test 9: RF Joist SAS Test -->
+        <div class="test-section">
+            <h2>Test 9: RF Joist with SAS URL</h2>
+            <p>Tests RF Joist.zip using SAS URL approach for better reliability.</p>
+            <button class="test-button" onclick="testRFJoistSAS()">Test RF Joist SAS</button>
+            <div id="rf-joist-result"></div>
+        </div>
+
+        <!-- Test 10: Get SAS URL -->
+        <div class="test-section">
+            <h2>Test 10: Get SAS URL for Any Blob</h2>
+            <p>Generate a SAS URL for direct access to any blob.</p>
+            <input type="text" id="sas-blob-name" placeholder="Blob name" value="RF Joist.zip" style="padding: 8px; margin-right: 10px;">
+            <button class="test-button" onclick="testGetSasUrl()">Get SAS URL</button>
+            <div id="get-sas-result"></div>
+        </div>
+
         <!-- Test 8: List ZIP Contents -->
         <div class="test-section">
             <h2>Test 8: List ZIP Contents</h2>
@@ -166,6 +183,68 @@
             <input type="text" id="zip-file" placeholder="ZIP file name" value="MRConfigurator.zip" style="padding: 8px; margin-right: 10px;">
             <button class="test-button" onclick="testListZipContents()">List Contents</button>
             <div id="zip-result"></div>
+        </div>
+
+        <!-- File Upload and Translate -->
+        <div class="test-section" style="background-color: #e8f5e9;">
+            <h2>🚀 Upload File and Translate to SVF</h2>
+            <p>Upload a CAD file (ZIP, IAM, IPT, etc.) and translate it to SVF format for viewing.</p>
+            
+            <div style="margin: 20px 0;">
+                <input type="file" id="file-upload" accept=".zip,.iam,.ipt,.dwg,.rvt" style="margin-bottom: 10px;">
+                <br>
+                <input type="text" id="root-filename" placeholder="Root filename for ZIP (optional)" style="padding: 8px; width: 300px; margin-bottom: 10px;">
+                <br>
+                <button class="test-button" onclick="uploadAndTranslate()" style="background-color: #4CAF50;">Upload and Translate</button>
+            </div>
+            
+            <div id="upload-progress" style="display: none; margin: 10px 0;">
+                <div style="background-color: #ddd; height: 20px; border-radius: 10px;">
+                    <div id="progress-bar" style="background-color: #4CAF50; height: 100%; width: 0%; border-radius: 10px; transition: width 0.3s;"></div>
+                </div>
+                <p id="progress-text" style="margin-top: 5px;">Uploading...</p>
+            </div>
+            
+            <div id="upload-result"></div>
+        </div>
+
+        <!-- Azure Only Upload -->
+        <div class="test-section" style="background-color: #fff3cd;">
+            <h2>☁️ Upload to Azure Only (No Forge)</h2>
+            <p>Upload files directly to Azure Blob Storage without Forge translation. Use this if Forge is timing out.</p>
+            
+            <div style="margin: 20px 0;">
+                <input type="file" id="azure-only-file" accept=".zip,.iam,.ipt,.dwg,.rvt" style="margin-bottom: 10px;">
+                <br>
+                <button class="test-button" onclick="uploadToAzureOnly()" style="background-color: #ffc107;">Upload to Azure Only</button>
+            </div>
+            
+            <div id="azure-only-result"></div>
+        </div>
+
+        <!-- Two-Step Translation -->
+        <div class="test-section" style="background-color: #e3f2fd;">
+            <h2>🔄 Two-Step Translation Process</h2>
+            <p><strong>Step 1:</strong> Upload to Azure using the yellow section above<br>
+               <strong>Step 2:</strong> Paste the Azure URL here to translate to SVF</p>
+            
+            <div style="margin: 20px 0;">
+                <input type="text" id="azure-url-input" placeholder="Paste Azure SAS URL here" style="padding: 8px; width: 100%; margin-bottom: 10px;">
+                <input type="text" id="translate-filename" placeholder="Filename (optional)" style="padding: 8px; width: 300px; margin-bottom: 10px;">
+                <input type="text" id="translate-root" placeholder="Root filename for ZIP (optional)" style="padding: 8px; width: 300px; margin-bottom: 10px;">
+                <br>
+                <button class="test-button" onclick="translateFromAzureUrl()" style="background-color: #2196F3;">Translate from Azure URL</button>
+            </div>
+            
+            <div id="translate-azure-result"></div>
+        </div>
+
+        <!-- Forge Connection Test -->
+        <div class="test-section" style="background-color: #ffebee;">
+            <h2>🔌 Test Forge Connection</h2>
+            <p>Diagnose Forge connectivity issues by testing authentication and basic operations.</p>
+            <button class="test-button" onclick="testForgeConnection()" style="background-color: #f44336;">Test Forge Connection</button>
+            <div id="forge-connection-result"></div>
         </div>
 
         <!-- API Reference -->
@@ -307,6 +386,36 @@
             }
         }
 
+        // Test 9: RF Joist SAS Test
+        async function testRFJoistSAS() {
+            displayLoading('rf-joist-result');
+            try {
+                const response = await fetch('/api/test/azure/test-rf-joist-sas', { method: 'POST' });
+                const data = await response.json();
+                displayResult('rf-joist-result', data, data.status === 'error');
+            } catch (error) {
+                displayResult('rf-joist-result', { error: error.message }, true);
+            }
+        }
+
+        // Test 10: Get SAS URL
+        async function testGetSasUrl() {
+            const blobName = document.getElementById('sas-blob-name').value;
+            if (!blobName) {
+                displayResult('get-sas-result', { error: 'Please enter a blob name' }, true);
+                return;
+            }
+            
+            displayLoading('get-sas-result');
+            try {
+                const response = await fetch(`/api/test/azure/get-sas-url/${encodeURIComponent(blobName)}`);
+                const data = await response.json();
+                displayResult('get-sas-result', data, response.status !== 200);
+            } catch (error) {
+                displayResult('get-sas-result', { error: error.message }, true);
+            }
+        }
+
         // Test 8: List ZIP Contents
         async function testListZipContents() {
             const zipFile = document.getElementById('zip-file').value;
@@ -322,6 +431,175 @@
                 displayResult('zip-result', data, data.status === 'error');
             } catch (error) {
                 displayResult('zip-result', { error: error.message }, true);
+            }
+        }
+
+        // Upload and Translate
+        async function uploadAndTranslate() {
+            const fileInput = document.getElementById('file-upload');
+            const rootFilename = document.getElementById('root-filename').value;
+            
+            if (!fileInput.files.length) {
+                displayResult('upload-result', { error: 'Please select a file to upload' }, true);
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            if (rootFilename) {
+                formData.append('rootFilename', rootFilename);
+            }
+            
+            // Show progress
+            document.getElementById('upload-progress').style.display = 'block';
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('progress-text').textContent = 'Uploading...';
+            
+            try {
+                // Upload with progress tracking
+                const xhr = new XMLHttpRequest();
+                
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        document.getElementById('progress-bar').style.width = percentComplete + '%';
+                        document.getElementById('progress-text').textContent = `Uploading... ${Math.round(percentComplete)}%`;
+                    }
+                });
+                
+                xhr.addEventListener('load', function() {
+                    if (xhr.status === 200) {
+                        const data = JSON.parse(xhr.responseText);
+                        document.getElementById('upload-progress').style.display = 'none';
+                        displayResult('upload-result', data, data.status === 'error' || data.status === 'partial');
+                        
+                        // If successful, offer to check translation progress
+                        if (data.status === 'success' && data.translation && data.translation.urn) {
+                            setTimeout(() => {
+                                if (confirm('Translation started! Check progress now?')) {
+                                    document.getElementById('urn-input').value = data.translation.urn;
+                                    testCheckTranslation();
+                                }
+                            }, 1000);
+                        }
+                    } else {
+                        throw new Error(`Upload failed: ${xhr.statusText}`);
+                    }
+                });
+                
+                xhr.addEventListener('error', function() {
+                    throw new Error('Upload failed');
+                });
+                
+                xhr.open('POST', '/api/test/azure/upload-and-translate');
+                xhr.send(formData);
+                
+            } catch (error) {
+                document.getElementById('upload-progress').style.display = 'none';
+                displayResult('upload-result', { error: error.message }, true);
+            }
+        }
+
+        // Upload to Azure Only
+        async function uploadToAzureOnly() {
+            const fileInput = document.getElementById('azure-only-file');
+            
+            if (!fileInput.files.length) {
+                displayResult('azure-only-result', { error: 'Please select a file to upload' }, true);
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            displayLoading('azure-only-result');
+            
+            try {
+                const response = await fetch('/api/test/azure/upload-to-azure-only', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                displayResult('azure-only-result', data, data.status === 'error');
+                
+                // If successful, show download link
+                if (data.status === 'success' && data.sasUrl) {
+                    const resultDiv = document.getElementById('azure-only-result');
+                    resultDiv.innerHTML += `<br><a href="${data.sasUrl}" target="_blank" style="color: #007bff;">📥 Download from Azure</a>`;
+                }
+            } catch (error) {
+                displayResult('azure-only-result', { error: error.message }, true);
+            }
+        }
+
+        // Translate from Azure URL
+        async function translateFromAzureUrl() {
+            const azureUrl = document.getElementById('azure-url-input').value;
+            const fileName = document.getElementById('translate-filename').value;
+            const rootFilename = document.getElementById('translate-root').value;
+            
+            if (!azureUrl) {
+                displayResult('translate-azure-result', { error: 'Please enter an Azure URL' }, true);
+                return;
+            }
+            
+            displayLoading('translate-azure-result');
+            
+            try {
+                const response = await fetch('/api/test/azure/translate-from-azure-url', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        azureUrl: azureUrl,
+                        fileName: fileName,
+                        rootFilename: rootFilename
+                    })
+                });
+                
+                const data = await response.json();
+                displayResult('translate-azure-result', data, data.status === 'error');
+                
+                // If successful, offer to check translation progress
+                if (data.status === 'success' && data.urn) {
+                    setTimeout(() => {
+                        if (confirm('Translation started! Check progress now?')) {
+                            document.getElementById('urn-input').value = data.urn;
+                            testCheckTranslation();
+                        }
+                    }, 1000);
+                }
+            } catch (error) {
+                displayResult('translate-azure-result', { error: error.message }, true);
+            }
+        }
+
+        // Test Forge Connection
+        async function testForgeConnection() {
+            displayLoading('forge-connection-result');
+            try {
+                const response = await fetch('/api/test/azure/test-forge-connection');
+                const data = await response.json();
+                
+                // Format the results nicely
+                if (data.results) {
+                    let formattedData = {
+                        ...data,
+                        results: data.results.map(r => ({
+                            ...r,
+                            '✓': r.status === 'success' ? '✅' : (r.status === 'failed' ? '❌' : '⏳')
+                        }))
+                    };
+                    displayResult('forge-connection-result', formattedData, data.status === 'error');
+                } else {
+                    displayResult('forge-connection-result', data, data.status === 'error');
+                }
+            } catch (error) {
+                displayResult('forge-connection-result', { error: error.message }, true);
             }
         }
 

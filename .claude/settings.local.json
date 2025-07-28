@@ -11,7 +11,12 @@
       "Bash(powershell:*)",
       "Bash(dotnet list package:*)",
       "Bash(dotnet package search:*)",
-      "Bash(cmd /c:*)"
+      "Bash(cmd /c:*)",
+      "Bash(az storage account list:*)",
+      "Bash(az storage container list:*)",
+      "Bash(az storage blob list:*)",
+      "Bash(set)",
+      "Bash(az storage blob show:*)"
     ],
     "deny": []
   }
