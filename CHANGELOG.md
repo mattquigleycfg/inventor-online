@@ -13,16 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Simplified Azure SVF viewer component (azureSimpleViewer.js)
 - Azure viewer demo page (azureViewerDemo.js)
 - Comprehensive Azure SVF integration guide (AZURE_SVF_GUIDE.md)
+- Azure Model Derivative integration service (AzureModelDerivativeService.cs)
+- Azure Model Derivative controller and API endpoints
+- Azure Model Derivative manager UI component
+- Complete Model Derivative workflow documentation (AZURE_MODEL_DERIVATIVE_GUIDE.md)
 
 ### Changed
 - Refactored AzureSvfProxyController to handle both direct URLs and relative paths
 - Improved proxy endpoint to support full Azure URL passthrough
 - Enhanced error handling and logging in Azure model loading
+- Updated Autodesk.Forge.DesignAutomation to version 6.0.2
+- Added Autodesk.SDKManager for new SDK support
 
 ### Fixed
 - Azure Blob Storage SVF file loading issues
 - CORS problems when loading models from Azure
 - Path resolution for nested SVF resources
+- Model Derivative API authentication for v2 endpoints
 
 ## [0.1.1] - 2025-01-29
 
