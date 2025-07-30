@@ -36,18 +36,37 @@ namespace WebApplication.Controllers
         /// Proxy endpoint to fetch SVF files from Azure Blob Storage.
         /// Handles URL encoding and authentication.
         /// </summary>
-        [HttpGet("svf/{*path}")]
-        public async Task<IActionResult> GetSvfFile(string path)
+        [HttpGet("{*path}")]
+        public async Task<IActionResult> GetFile(string path)
         {
             try
             {
                 // Decode the path (handles forward slashes encoded as %2F)
                 var decodedPath = WebUtility.UrlDecode(path);
                 
-                // Check if blob exists
+                _logger.LogInformation($"Proxying request for: {decodedPath}");
+                
+                // For direct Azure URLs that already contain the full path
+                if (decodedPath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    // This is a full URL, fetch directly
+                    var response = await _httpClient.GetAsync(decodedPath);
+                    
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        _logger.LogError($"Failed to fetch file from Azure: {response.StatusCode} for URL: {decodedPath}");
+                        return StatusCode((int)response.StatusCode);
+                    }
+
+                    var contentType = GetContentType(Path.GetFileName(decodedPath));
+                    var stream = await response.Content.ReadAsStreamAsync();
+                    return File(stream, contentType);
+                }
+                
+                // For relative paths, use the blob service
                 if (!await _azureBlobService.BlobExistsAsync(decodedPath))
                 {
-                    _logger.LogWarning($"SVF file not found: {decodedPath}");
+                    _logger.LogWarning($"File not found in Azure: {decodedPath}");
                     return NotFound();
                 }
 
@@ -55,35 +74,29 @@ namespace WebApplication.Controllers
                 var sasUrl = await _azureBlobService.GenerateSasUrlAsync(
                     decodedPath, 
                     Azure.Storage.Sas.BlobSasPermissions.Read,
-                    expirationMinutes: 30
+                    expirationMinutes: 60
                 );
 
                 // Fetch the file from Azure
-                var response = await _httpClient.GetAsync(sasUrl);
+                var blobResponse = await _httpClient.GetAsync(sasUrl);
                 
-                if (!response.IsSuccessStatusCode)
+                if (!blobResponse.IsSuccessStatusCode)
                 {
-                    _logger.LogError($"Failed to fetch SVF file from Azure: {response.StatusCode}");
-                    return StatusCode((int)response.StatusCode);
+                    _logger.LogError($"Failed to fetch file from Azure: {blobResponse.StatusCode}");
+                    return StatusCode((int)blobResponse.StatusCode);
                 }
 
-                // Get content type
-                var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
-                
-                // Special handling for bubble.json
-                if (Path.GetFileName(decodedPath) == "bubble.json")
-                {
-                    contentType = "application/json";
-                }
+                // Get content type based on file extension
+                var blobContentType = GetContentType(Path.GetFileName(decodedPath));
 
                 // Stream the content back to the client
-                var stream = await response.Content.ReadAsStreamAsync();
-                return File(stream, contentType);
+                var blobStream = await blobResponse.Content.ReadAsStreamAsync();
+                return File(blobStream, blobContentType);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error proxying SVF file: {path}");
-                return StatusCode(500, new { error = "Failed to fetch SVF file" });
+                _logger.LogError(ex, $"Error proxying file: {path}");
+                return StatusCode(500, new { error = "Failed to fetch file from Azure" });
             }
         }
 

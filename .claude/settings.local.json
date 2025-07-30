@@ -16,7 +16,12 @@
       "Bash(az storage container list:*)",
       "Bash(az storage blob list:*)",
       "Bash(set)",
-      "Bash(az storage blob show:*)"
+      "Bash(az storage blob show:*)",
+      "Bash(az account:*)",
+      "Bash(az storage account show-connection-string:*)",
+      "Bash(rm:*)",
+      "Bash(npm install:*)",
+      "Bash(node:*)"
     ],
     "deny": []
   }

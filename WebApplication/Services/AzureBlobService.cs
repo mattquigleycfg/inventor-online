@@ -15,12 +15,9 @@ namespace WebApplication.Services
     public interface IAzureBlobService
     {
         Task<List<ModelInfo>> ListModelsAsync();
-        Task<Stream> DownloadModelAsync(string modelName);
-        Task<string> GetModelUrlAsync(string modelName);
-        Task<bool> ModelExistsAsync(string modelName);
         Task<bool> IsConfiguredAsync();
         
-        // New methods for file management
+        // File management methods
         Task<string> GenerateSasUrlAsync(string blobName, BlobSasPermissions permissions = BlobSasPermissions.Read, int expirationMinutes = 30);
         Task TransferFileAsync(string sourceUrl, string targetBlobName);
         Task UploadFileAsync(string localFilePath, string blobName);
@@ -56,41 +53,41 @@ namespace WebApplication.Services
         {
             _logger = logger;
             
-            // Try to get connection string first
+            // Get container name
+            _containerName = configuration["AzureBlobStorage:ContainerName"] ?? "models";
+            
+            // Priority: Environment variables > Local config > Default config
             _connectionString = configuration.GetConnectionString("AzureStorage") ?? 
                               configuration["AzureBlobStorage:ConnectionString"];
             
-            _containerName = configuration["AzureBlobStorage:ContainerName"] ?? "models";
-            
-            // If no connection string, use the direct URL approach
-            if (string.IsNullOrEmpty(_connectionString))
+            if (!string.IsNullOrEmpty(_connectionString))
             {
+                // Use connection string (preferred for production)
+                _blobServiceClient = new BlobServiceClient(_connectionString);
+                _isConfigured = true;
+                _baseUrl = configuration["AzureBlobStorage:BaseUrl"] ?? "https://conform3d.blob.core.windows.net/models";
+                _logger.LogInformation("Azure Blob Service configured with connection string");
+            }
+            else
+            {
+                // Fallback to SAS token approach
                 _baseUrl = configuration["AzureBlobStorage:BaseUrl"] ?? Environment.GetEnvironmentVariable("AZURE_BLOB_BASE_URL");
-
-                // Prefer environment variable over configuration for SAS token (safer for production).
-                _sasToken = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AZURE_BLOB_SAS_TOKEN"))
-                    ? Environment.GetEnvironmentVariable("AZURE_BLOB_SAS_TOKEN")
-                    : configuration["AzureBlobStorage:SasToken"];
-
-                _isConfigured = !string.IsNullOrEmpty(_sasToken);
+                _sasToken = Environment.GetEnvironmentVariable("AZURE_BLOB_SAS_TOKEN") ?? configuration["AzureBlobStorage:SasToken"];
                 
-                // Create BlobServiceClient with SAS token
-                if (_isConfigured)
+                if (!string.IsNullOrEmpty(_sasToken) && !string.IsNullOrEmpty(_baseUrl))
                 {
                     var storageAccountName = ExtractStorageAccountName(_baseUrl);
                     var blobServiceUri = new Uri($"https://{storageAccountName}.blob.core.windows.net/?{_sasToken}");
                     _blobServiceClient = new BlobServiceClient(blobServiceUri);
+                    _isConfigured = true;
+                    _logger.LogInformation("Azure Blob Service configured with SAS token");
+                }
+                else
+                {
+                    _isConfigured = false;
+                    _logger.LogWarning("Azure Blob Service not configured - missing connection string or SAS token");
                 }
             }
-            else
-            {
-                // Parse connection string for direct access
-                _baseUrl = configuration["AzureBlobStorage:BaseUrl"] ?? "https://conform3d.blob.core.windows.net/models";
-                _isConfigured = true;
-                _blobServiceClient = new BlobServiceClient(_connectionString);
-            }
-
-            _logger.LogInformation($"Azure Blob Service configured: {_isConfigured}");
         }
 
         private string ExtractStorageAccountName(string baseUrl)
@@ -147,71 +144,10 @@ namespace WebApplication.Services
             }
         }
 
-        public async Task<Stream> DownloadModelAsync(string modelName)
-        {
-            if (!_isConfigured)
-            {
-                throw new InvalidOperationException("Azure Blob Service is not configured");
-            }
-
-            try
-            {
-                var url = $"{_baseUrl}/{modelName}?{_sasToken}";
-                using var httpClient = new HttpClient();
-                
-                // Set timeout for large files
-                httpClient.Timeout = TimeSpan.FromMinutes(10);
-                
-                var response = await httpClient.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-                
-                _logger.LogInformation($"Successfully downloaded {modelName} from Azure Blob Storage");
-                return await response.Content.ReadAsStreamAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error downloading model {modelName} from Azure Blob Storage");
-                throw;
-            }
-        }
-
-        public async Task<string> GetModelUrlAsync(string modelName)
-        {
-            if (!_isConfigured)
-            {
-                throw new InvalidOperationException("Azure Blob Service is not configured");
-            }
-
-            return await Task.FromResult($"{_baseUrl}/{modelName}?{_sasToken}");
-        }
-
-        public async Task<bool> ModelExistsAsync(string modelName)
-        {
-            if (!_isConfigured)
-            {
-                return false;
-            }
-
-            try
-            {
-                var url = $"{_baseUrl}/{modelName}?{_sasToken}";
-                using var httpClient = new HttpClient();
-                
-                // Use HEAD request to check existence without downloading
-                var request = new HttpRequestMessage(HttpMethod.Head, url);
-                var response = await httpClient.SendAsync(request);
-                
-                var exists = response.IsSuccessStatusCode;
-                _logger.LogInformation($"Model {modelName} exists: {exists}");
-                
-                return exists;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error checking if model {modelName} exists");
-                return false;
-            }
-        }
+        // Legacy methods - use BlobExistsAsync and DownloadBlobAsync instead
+        public async Task<Stream> DownloadModelAsync(string modelName) => await DownloadBlobAsync(modelName);
+        public async Task<bool> ModelExistsAsync(string modelName) => await BlobExistsAsync(modelName);
+        public async Task<string> GetModelUrlAsync(string modelName) => await GenerateSasUrlAsync(modelName);
 
         public async Task<string> GenerateSasUrlAsync(string blobName, BlobSasPermissions permissions = BlobSasPermissions.Read, int expirationMinutes = 30)
         {
